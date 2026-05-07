@@ -95,6 +95,8 @@ function processInlineMath(root: Element) {
 		acceptNode(node) {
 			let curr = node.parentElement;
 			while (curr && curr !== root) {
+				if (curr.hasAttribute("data-math"))
+					return NodeFilter.FILTER_REJECT;
 				if (["CODE", "PRE", "SCRIPT", "STYLE"].includes(curr.tagName))
 					return NodeFilter.FILTER_REJECT;
 				curr = curr.parentElement;
@@ -105,17 +107,142 @@ function processInlineMath(root: Element) {
 
 	const toReplace: { node: Text; newText: string }[] = [];
 	let node: Node | null;
-	const regex = /(^|[^\\])\$(?!\s)([^$]*?[^\s\\])\$(?![\d])/g;
 	while ((node = walker.nextNode())) {
 		const text = (node as Text).nodeValue || "";
 		if (text.includes("$")) {
-			const newText = text.replace(regex, "$1\\($2\\)");
+			const newText = convertInlineMathDelimiters(text);
 			if (newText !== text) toReplace.push({ node: node as Text, newText });
 		}
 	}
 	for (const { node, newText } of toReplace) {
 		node.nodeValue = newText;
 	}
+}
+
+function processDisplayMathBlocks(root: Element, doc: Document) {
+	for (const element of Array.from(root.querySelectorAll("p, li"))) {
+		const math = extractDisplayMathBlock(element);
+		if (!math) continue;
+
+		element.setAttribute("data-math", "display");
+		element.setAttribute("data-math-source", math);
+		element.replaceChildren(doc.createTextNode(math));
+	}
+}
+
+function extractDisplayMathBlock(element: Element): string | null {
+	let text = "";
+	let previousWasBreak = false;
+
+	for (const child of Array.from(element.childNodes)) {
+		if (child.nodeType === Node.TEXT_NODE) {
+			let value = child.nodeValue || "";
+			if (previousWasBreak) value = value.replace(/^\n+/, "");
+			text += value;
+			previousWasBreak = false;
+		} else if (
+			child.nodeType === Node.ELEMENT_NODE &&
+			(child as Element).tagName === "BR"
+		) {
+			text += "\n";
+			previousWasBreak = true;
+		} else {
+			return null;
+		}
+	}
+
+	const trimmed = text.trim();
+	if (!trimmed.startsWith("$$") || !trimmed.endsWith("$$")) return null;
+
+	const math = trimmed.slice(2, -2).trim();
+	return math ? math : null;
+}
+
+function convertInlineMathDelimiters(text: string): string {
+	const parts: string[] = [];
+	let index = 0;
+	// Allows adjacent inline spans like `$a$$b$` without treating `$$` display
+	// delimiters as inline math openings.
+	let previousDollarAllowsInlineOpen = false;
+
+	while (index < text.length) {
+		const char = text[index];
+		if (char !== "$") {
+			parts.push(char);
+			previousDollarAllowsInlineOpen = false;
+			index += 1;
+			continue;
+		}
+
+		if (text[index - 1] !== "\\" && text[index + 1] === "$") {
+			const displayEnd = findDisplayMathEnd(text, index + 2);
+			if (displayEnd !== -1) {
+				parts.push(text.slice(index, displayEnd + 2));
+				previousDollarAllowsInlineOpen = true;
+				index = displayEnd + 2;
+				continue;
+			}
+
+			parts.push("$$");
+			previousDollarAllowsInlineOpen = false;
+			index += 2;
+			continue;
+		}
+
+		if (
+			text[index - 1] === "\\" ||
+			(text[index - 1] === "$" && !previousDollarAllowsInlineOpen) ||
+			/\s/.test(text[index + 1] || "")
+		) {
+			parts.push(char);
+			previousDollarAllowsInlineOpen = false;
+			index += 1;
+			continue;
+		}
+
+		const end = findInlineMathEnd(text, index + 1);
+		if (end === -1) {
+			parts.push(char);
+			previousDollarAllowsInlineOpen = false;
+			index += 1;
+			continue;
+		}
+
+		parts.push(`\\(${text.slice(index + 1, end)}\\)`);
+		index = end + 1;
+		previousDollarAllowsInlineOpen = true;
+	}
+
+	return parts.join("");
+}
+
+function findDisplayMathEnd(text: string, start: number): number {
+	for (let index = start; index < text.length - 1; index += 1) {
+		if (
+			text[index] === "$" &&
+			text[index + 1] === "$" &&
+			text[index - 1] !== "\\"
+		) {
+			return index;
+		}
+	}
+	return -1;
+}
+
+function findInlineMathEnd(text: string, start: number): number {
+	for (let index = start; index < text.length; index += 1) {
+		if (text[index] !== "$") continue;
+		// Escaped dollars are math content, not closing delimiters.
+		if (text[index - 1] === "\\") continue;
+
+		const beforeEnd = text[index - 1] || "";
+		const afterEnd = text[index + 1] || "";
+		// A following `$` may open an adjacent inline span; the outer loop handles it.
+		if (/\s/.test(beforeEnd) || /\d/.test(afterEnd)) return -1;
+
+		return index;
+	}
+	return -1;
 }
 
 function processBlockIds(root: Element, doc: Document) {
@@ -430,6 +557,7 @@ export function processMarkdownHtml(
 		}
 	}
 
+	processDisplayMathBlocks(doc.body, doc);
 	processBlockIds(doc.body, doc);
 	processTaskItems(doc.body);
 	processInlineMath(doc.body);
@@ -598,11 +726,12 @@ export async function renderRichContent(
 	}
 
 	if (katex) {
-		const mathElements = markdownBody.querySelectorAll("span[data-math]");
+		const mathElements = markdownBody.querySelectorAll("[data-math]");
 		for (const el of Array.from(mathElements)) {
 			const isDisplay = el.getAttribute("data-math") === "display";
+			const mathSource = el.getAttribute("data-math-source") || el.textContent || "";
 			try {
-				katex.render(el.textContent || "", el as HTMLElement, {
+				katex.render(mathSource, el as HTMLElement, {
 					displayMode: isDisplay,
 					throwOnError: false,
 				});
