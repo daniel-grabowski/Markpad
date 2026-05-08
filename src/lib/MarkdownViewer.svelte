@@ -18,6 +18,7 @@
 	import ContextMenu, { type ContextMenuItem } from './components/ContextMenu.svelte';
 	import Toc from './components/Toc.svelte';
 	import Toast from './components/Toast.svelte';
+	import FindBar from './components/FindBar.svelte';
 	import { exportAsHtml as _exportHtml, exportAsPdf } from './utils/export';
 	import ZoomOverlay from './components/ZoomOverlay.svelte';
 import { processMarkdownHtml } from './utils/markdown';
@@ -78,6 +79,9 @@ import { t } from './utils/i18n.js';
 		revealHeader: (text: string) => void;
 	} | null>(null);
 	let liveMode = $state(false);
+
+	let findOpen = $state(false);
+	let findBar = $state<{ reapply: () => void; clearHighlights: () => void } | null>(null);
 
 	let isDragging = $state(false);
 	let dragTarget = $state<'editor' | 'preview' | null>(null);
@@ -331,6 +335,7 @@ import { t } from './utils/i18n.js';
 	$effect(() => {
 		const _ = tabManager.activeTabId;
 		showHome = false;
+		findOpen = false;
 	});
 
 	function processHighlights(root: Element) {
@@ -691,6 +696,16 @@ import { t } from './utils/i18n.js';
 
 	$effect(() => {
 		if (sanitizedHtml && markdownBody && !isEditing && hljs && renderMathInElement && mermaid) renderRichContent();
+	});
+
+	// Re-apply find highlights after the preview HTML is replaced. The
+	// `bind:innerHTML={sanitizedHtml}` on the article wipes the DOM on every
+	// edit/render pass; without this, highlights vanish until the user
+	// re-types in the find bar.
+	$effect(() => {
+		const _ = sanitizedHtml;
+		if (!findOpen || !findBar) return;
+		tick().then(() => findBar?.reapply());
 	});
 
 	$effect(() => {
@@ -2069,6 +2084,17 @@ import { t } from './utils/i18n.js';
 			e.preventDefault();
 			showSettings = !showSettings;
 		}
+		// Ctrl/Cmd+F: open the preview find bar, but only when the editor
+		// (Monaco) doesn't have focus — Monaco ships its own native find
+		// widget and we don't want to fight it in Edit/Split mode.
+		if (cmdOrCtrl && !e.shiftKey && !e.altKey && key === 'f') {
+			const active = document.activeElement as Node | null;
+			const editorHasFocus = !!editorPaneEl && !!active && editorPaneEl.contains(active);
+			if (!editorHasFocus && markdownBody) {
+				e.preventDefault();
+				findOpen = true;
+			}
+		}
 	}
 
 	function pushScrollHistory() {
@@ -2281,6 +2307,11 @@ import { t } from './utils/i18n.js';
 			unlisteners.push(
 				await listen('menu-edit-file', () => {
 					toggleEdit();
+				}),
+			);
+			unlisteners.push(
+				await listen('menu-edit-find', () => {
+					if (markdownBody) findOpen = true;
 				}),
 			);
 			unlisteners.push(
@@ -2577,6 +2608,7 @@ import { t } from './utils/i18n.js';
 		{theme}
 		onSetTheme={(t) => (theme = t)}
 		onopenSettings={() => (showSettings = true)}
+		onfind={() => { if (markdownBody) findOpen = true; }}
 		oncloseTab={closeTabAndWindowIfLast} />
 	<div class="loading-screen">
 		<svg class="spinner" viewBox="0 0 50 50">
@@ -2620,6 +2652,7 @@ import { t } from './utils/i18n.js';
 		{theme}
 		onSetTheme={(t) => (theme = t)}
 		onopenSettings={() => (showSettings = true)}
+		onfind={() => { if (markdownBody) findOpen = true; }}
 		oncloseTab={closeTabAndWindowIfLast} />
 
 	<Settings show={showSettings} {theme} onSetTheme={(t) => (theme = t)} onclose={() => (showSettings = false)} />
@@ -2675,7 +2708,13 @@ import { t } from './utils/i18n.js';
 						class="pane viewer-pane" 
 						class:active={!isEditing || isSplit} 
 						style="flex: {isSplit ? 1 - tabManager.activeTab.splitRatio : (!isEditing) ? 1 : 0}">
-						
+
+						<FindBar
+							bind:this={findBar}
+							bind:open={findOpen}
+							{markdownBody}
+							language={settings.language} />
+
 						<div class="viewer-content">
 							<article
 								bind:this={markdownBody}
