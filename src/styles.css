@@ -1146,7 +1146,11 @@ body {
 	.title-action-btn,
 	.theme-dropdown-container,
 	.control-btn,
-	.lang-label {
+	.lang-label,
+	.top-fade-mask,
+	.toc-overlay-wrapper,
+	.toc-toggle-floating,
+	.find-bar {
 		display: none !important;
 	}
 
@@ -1155,7 +1159,8 @@ body {
 	#app,
 	.markdown-container,
 	.layout-container,
-	.pane.viewer-pane {
+	.pane.viewer-pane,
+	.viewer-content {
 		background: white !important;
 		overflow: visible !important;
 		height: auto !important;
@@ -1179,10 +1184,12 @@ body {
 		position: static !important;
 	}
 
-	.markdown-body pre {
+	.markdown-body pre,
+	.markdown-body pre code {
 		white-space: pre-wrap !important;
-		word-break: break-word !important;
-		overflow-x: visible !important;
+		overflow-wrap: anywhere !important;
+		word-break: normal !important;
+		overflow: visible !important;
 	}
 
 	.markdown-container {
