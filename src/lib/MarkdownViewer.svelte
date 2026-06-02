@@ -1311,26 +1311,66 @@ import { t } from './utils/i18n.js';
 		return true;
 	}
 
-	async function toggleEdit() {
+	async function toggleEdit(silentSave = false) {
 		const tab = tabManager.activeTab;
 		if (!tab || tab.path === undefined) return;
 
 		if (isEditing) {
-			// Switch to view — never auto-save; render in-memory content so
-			// unsaved edits are visible and the file stays dirty until the
-			// user explicitly saves with Ctrl+S.
+			// Switch back to view
+			if (tab.isDirty && tab.path !== '') {
+				// `confirmBeforeSave` always wins: when the user has asked
+				// for confirmation, every dirty toggle must show the modal,
+				// even if the caller passed `silentSave=true` (hotkey path).
+				const shouldSilent =
+					!settings.confirmBeforeSave && (silentSave || settings.autoSave);
+				if (shouldSilent) {
+					cancelPendingAutoSave(tab.id);
+					const success = await saveContent(tab.id);
+					if (!success) {
+						addToast(t('toast.autoSaveFailed', settings.language), 'error');
+						return; // If save fails, stay in edit mode
+					}
+				} else {
+					const response = await askCustom(t('modal.youHaveUnsavedChangesBeforeReturning', settings.language), {
+						title: t('modal.unsavedChanges', settings.language),
+						kind: 'warning',
+						showSave: true,
+					});
+
+					// Cancel only happens on save / discard. If user picks
+					// Cancel, the pending auto-save timer keeps running.
+					if (response === 'cancel') return;
+					if (response === 'save') {
+						cancelPendingAutoSave(tab.id);
+						const success = await saveContent(tab.id);
+						if (!success) return;
+					} else if (response === 'discard') {
+						cancelPendingAutoSave(tab.id);
+						tab.rawContent = tab.originalContent;
+						tab.isDirty = false;
+					}
+				}
+			}
+			// If `saveContent` left `tab.isDirty=true` (TOCTOU — user typed
+			// during the await), staying in edit mode is the safe default:
+			// a non-editable dirty tab disables auto-save, blocks Cmd+S,
+			// and risks getting clobbered by the next disk reload. Surface
+			// a hint and keep the tab editable.
+			if (tab.path !== '' && tab.isDirty) {
+				addToast(t('toast.savedNewerEdits', settings.language), 'info');
+				return;
+			}
 			tab.isEditing = false;
-			if (tab.path !== '' && !tab.isDirty) {
-				// Clean saved file: load from disk (handles large-file chunking).
+			if (tab.path !== '') {
 				await loadMarkdown(tab.path, { preserveEditState: true });
 			} else {
-				// Dirty or untitled: render the current in-memory buffer.
+				// Untitled: render the in-memory buffer for the preview.
 				try {
 					const html = (await invoke('render_markdown', { content: tab.rawContent })) as string;
-					const processedInfo = processMarkdownHtml(html, tab.path, collapsedHeaders);
+					const processedInfo = processMarkdownHtml(html, '', collapsedHeaders);
 					tabManager.updateTabContent(tab.id, processedInfo);
 				} catch (e) {
-					console.error('Failed to render markdown for preview', e);
+					console.error('Failed to render markdown', e);
 				}
 			}
 		} else {
@@ -2010,11 +2050,13 @@ import { t } from './utils/i18n.js';
 		}
 		if (cmdOrCtrl && key === 'e') {
 			e.preventDefault();
-			if (!isSplit) toggleEdit();
+			if (!isSplit) toggleEdit(true);
 		}
 		if (cmdOrCtrl && key === 's') {
-			e.preventDefault();
-			saveContent();
+			if (isEditing || isSplit) {
+				e.preventDefault();
+				saveContent();
+			}
 		}
 
 		if (cmdOrCtrl && e.shiftKey && key === 't') {
@@ -2352,12 +2394,16 @@ import { t } from './utils/i18n.js';
 			);
 			// Native macOS menubar — Markpad ▸ Quit and File ▸ * — bridged
 			// to the same handlers the in-window burger button uses, so the
-			// menu and the burger stay behaviourally identical.
+			// menu and the burger stay behaviourally identical. Save mirrors
+			// the keydown guard (`isEditing || isSplit`) so menu ⌘S in pure
+			// view mode is a no-op, matching the keyboard shortcut.
 			unlisteners.push(await listen('menu-app-quit',         () => appExit()));
 			unlisteners.push(await listen('menu-file-new',         () => handleNewFile()));
 			unlisteners.push(await listen('menu-file-open',        () => selectFile()));
 			unlisteners.push(await listen('menu-file-close',       () => closeFile()));
-			unlisteners.push(await listen('menu-file-save', () => saveContent()));
+			unlisteners.push(await listen('menu-file-save',        () => {
+				if (isEditing || tabManager.activeTab?.isSplit) saveContent();
+			}));
 			unlisteners.push(await listen('menu-file-save-as',     () => saveContentAs()));
 			unlisteners.push(await listen('menu-file-export-html', () => exportAsHtml()));
 			unlisteners.push(await listen('menu-file-export-pdf', () => exportAsPdf()));
