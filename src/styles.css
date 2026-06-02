@@ -1146,7 +1146,11 @@ body {
 	.title-action-btn,
 	.theme-dropdown-container,
 	.control-btn,
-	.lang-label {
+	.lang-label,
+	.top-fade-mask,
+	.toc-overlay-wrapper,
+	.toc-toggle-floating,
+	.find-bar {
 		display: none !important;
 	}
 
@@ -1155,7 +1159,8 @@ body {
 	#app,
 	.markdown-container,
 	.layout-container,
-	.pane.viewer-pane {
+	.pane.viewer-pane,
+	.viewer-content {
 		background: white !important;
 		overflow: visible !important;
 		height: auto !important;
@@ -1179,10 +1184,38 @@ body {
 		position: static !important;
 	}
 
-	.markdown-body pre {
+	.markdown-body pre,
+	.markdown-body pre code {
 		white-space: pre-wrap !important;
-		word-break: break-word !important;
-		overflow-x: visible !important;
+		overflow-wrap: anywhere !important;
+		word-break: normal !important;
+		overflow: visible !important;
+	}
+
+	.markdown-body p,
+	.markdown-body li {
+		orphans: 3;
+		widows: 3;
+	}
+
+	.markdown-body h1,
+	.markdown-body h2,
+	.markdown-body h3,
+	.markdown-body h4,
+	.markdown-body h5,
+	.markdown-body h6 {
+		break-after: avoid;
+		break-inside: avoid;
+	}
+
+	.markdown-body pre,
+	.markdown-body blockquote,
+	.markdown-body table,
+	.markdown-body figure,
+	.markdown-body img,
+	.markdown-body .mermaid-diagram,
+	.markdown-body .katex-display {
+		break-inside: avoid;
 	}
 
 	.markdown-container {
