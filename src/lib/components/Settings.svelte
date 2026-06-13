@@ -655,6 +655,13 @@
 								</label>
 							</div>
 							<div class="setting-item">
+								<label for="appearance-new-file-mode">{t('settings.newFileDefaultMode', settings.language)}</label>
+								<label class="toggle">
+									<input id="appearance-new-file-mode" type="checkbox" checked={settings.newFileDefaultMode} onchange={() => settings.toggleNewFileDefaultMode()} />
+									<span class="toggle-slider"></span>
+								</label>
+							</div>
+							<div class="setting-item">
 								<label for="appearance-recent-files">{t('settings.showRecentFiles', settings.language)}</label>
 								<label class="toggle">
 									<input id="appearance-recent-files" type="checkbox" checked={settings.showRecentFiles} onchange={() => settings.toggleShowRecentFiles()} />

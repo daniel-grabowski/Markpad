@@ -105,7 +105,7 @@ class TabManager {
 			originalContent: content,
 			scrollTop: 0,
 			isDirty: false,
-			isEditing: true,
+			isEditing: settings.newFileDefaultMode,
 			history: [content],
 			historyIndex: 0,
 			editorViewState: null,

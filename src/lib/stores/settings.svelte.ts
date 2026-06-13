@@ -147,6 +147,7 @@ export class SettingsStore {
 	occurrencesHighlight = $state(false);
 	showWhitespace = $state(false);
 	startInEditor = $state(false);
+	newFileDefaultMode = $state(true);
 	showRecentFiles = $state(true);
 	editorMaxWidth = $state(80);
 	pinnedToc = $state(false);
@@ -188,6 +189,7 @@ export class SettingsStore {
 			const savedShowToc = localStorage.getItem('editor.showToc');
 			const savedHighlightColor = localStorage.getItem('editor.highlightColor');
 			const savedStartInEditor = localStorage.getItem('editor.startInEditor');
+			const savedNewFileDefaultMode = localStorage.getItem('editor.newFileDefaultMode');
 			const savedShowRecentFiles = localStorage.getItem('editor.showRecentFiles');
 			const savedEditorMaxWidth = localStorage.getItem('editor.maxWidth');
 			const savedPinnedToc = localStorage.getItem('editor.pinnedToc');
@@ -231,6 +233,7 @@ export class SettingsStore {
 			if (savedShowToc !== null) this.showToc = savedShowToc === 'true';
 			if (savedHighlightColor !== null) this.highlightColor = savedHighlightColor;
 			if (savedStartInEditor !== null) this.startInEditor = savedStartInEditor === 'true';
+			if (savedNewFileDefaultMode !== null) this.newFileDefaultMode = savedNewFileDefaultMode === 'true';
 			if (savedShowRecentFiles !== null) this.showRecentFiles = savedShowRecentFiles === 'true';
 			if (savedEditorMaxWidth !== null) this.editorMaxWidth = parseFontSize(savedEditorMaxWidth, 80, 20, 500);
 			if (savedPinnedToc !== null) this.pinnedToc = savedPinnedToc === 'true';
@@ -297,6 +300,7 @@ export class SettingsStore {
 					localStorage.setItem('editor.showToc', String(this.showToc));
 					localStorage.setItem('editor.highlightColor', this.highlightColor);
 					localStorage.setItem('editor.startInEditor', String(this.startInEditor));
+					localStorage.setItem('editor.newFileDefaultMode', String(this.newFileDefaultMode));
 					localStorage.setItem('editor.showRecentFiles', String(this.showRecentFiles));
 					localStorage.setItem('editor.maxWidth', String(this.editorMaxWidth));
 					localStorage.setItem('editor.pinnedToc', String(this.pinnedToc));
@@ -412,6 +416,10 @@ export class SettingsStore {
 
 	toggleStartInEditor() {
 		this.startInEditor = !this.startInEditor;
+	}
+
+	toggleNewFileDefaultMode() {
+		this.newFileDefaultMode = !this.newFileDefaultMode;
 	}
 
 	togglePinnedToc() {
