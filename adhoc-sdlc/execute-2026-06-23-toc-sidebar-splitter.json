@@ -1,0 +1,63 @@
+{
+  "type": "execute",
+  "name": "toc-sidebar-splitter",
+  "title": "Resizable table of contents sidebar",
+  "project": "",
+  "keywords": [],
+  "created": "2026-06-23T15:56:30+02:00",
+  "updated": "2026-06-23T16:02:02+02:00",
+  "status": "done",
+  "plan": "/home/dgrabowski/projects/Markpad/adhoc-sdlc/plan-2026-06-23-toc-sidebar-splitter.md",
+  "entries": [
+    {
+      "ts": "2026-06-23T15:58:45+02:00",
+      "note": "Added persistent table-of-contents width setting with clamped localStorage loading and saving.",
+      "phase": "settings",
+      "files": [
+        {
+          "path": "src/lib/stores/settings.svelte.ts",
+          "change": "edit"
+        }
+      ]
+    },
+    {
+      "ts": "2026-06-23T15:59:28+02:00",
+      "note": "Added the ToC resize separator, pointer drag handling, keyboard resize handling, and dynamic CSS width wiring.",
+      "phase": "implementation",
+      "files": [
+        {
+          "path": "src/lib/MarkdownViewer.svelte",
+          "change": "edit"
+        },
+        {
+          "path": "src/lib/components/Toc.svelte",
+          "change": "edit"
+        }
+      ]
+    }
+  ],
+  "decisions": [],
+  "verification": [
+    {
+      "ts": "2026-06-23T16:01:47+02:00",
+      "command": "npm run check",
+      "outcome": "npm run check passed with 0 errors and the existing 14 warnings; no new ToC separator warnings remain."
+    },
+    {
+      "ts": "2026-06-23T16:01:47+02:00",
+      "command": "npm run build",
+      "outcome": "npm run build completed successfully; Vite emitted existing warnings and chunk-size notices only."
+    },
+    {
+      "ts": "2026-06-23T16:01:47+02:00",
+      "command": "git diff --check; rg TOC_WIDTH/240px patterns",
+      "outcome": "git diff --check passed and grep found no remaining hard-coded ToC width controls for 240px/TOC_WIDTH."
+    },
+    {
+      "ts": "2026-06-23T16:02:02+02:00",
+      "command": "manual diff review",
+      "outcome": "Final self-check: implementation matches plan, keeps ToC width clamped and persisted, updates left/right and pinned/overlay layout from one CSS variable, and keeps scope limited to ToC behavior."
+    }
+  ],
+  "final_result": "Added a resizable table-of-contents sidebar with persisted width, pointer drag support, keyboard resizing, and dynamic layout wiring."
+}
