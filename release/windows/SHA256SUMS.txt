@@ -1,0 +1,1 @@
+8a5adfad70fc91fbb970e796f7e325fc5f0e24c48021d9529bdb95d01455d1f0  release/windows/Markpad_2.6.11_x64.exe

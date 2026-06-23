@@ -1,0 +1,122 @@
+{
+  "type": "execute",
+  "name": "tab-context-menu-file-actions",
+  "title": "Tab context menu file actions",
+  "project": "",
+  "keywords": [],
+  "created": "2026-06-23T12:56:14+02:00",
+  "updated": "2026-06-23T13:01:37+02:00",
+  "status": "done",
+  "plan": "/home/dgrabowski/projects/Markpad/adhoc-sdlc/plan-2026-06-23-tab-context-menu-file-actions.md",
+  "entries": [
+    {
+      "ts": "2026-06-23T12:56:14+02:00",
+      "note": "Started execution from the confirmed lightweight plan after locating Tab.svelte, ContextMenu.svelte, i18n, and existing Tauri commands.",
+      "phase": "discovery",
+      "files": [
+        {
+          "path": "adhoc-sdlc/plan-2026-06-23-tab-context-menu-file-actions.md",
+          "change": "edit"
+        },
+        {
+          "path": "src/lib/components/Tab.svelte",
+          "change": "edit"
+        },
+        {
+          "path": "src/lib/utils/i18n.ts",
+          "change": "edit"
+        },
+        {
+          "path": "src-tauri/src/lib.rs",
+          "change": "edit"
+        }
+      ]
+    },
+    {
+      "ts": "2026-06-23T12:57:14+02:00",
+      "note": "Added a RED test for tab file action metadata; it fails as expected because tabFileActions.js/helper does not exist yet.",
+      "phase": "red-test",
+      "files": [
+        {
+          "path": "src/lib/utils/tabFileActions.test.ts",
+          "change": "edit"
+        }
+      ]
+    },
+    {
+      "ts": "2026-06-23T12:57:34+02:00",
+      "note": "Implemented and verified the tab file action helper with a focused tsx node:test run.",
+      "phase": "green-test",
+      "files": [
+        {
+          "path": "src/lib/utils/tabFileActions.ts",
+          "change": "edit"
+        },
+        {
+          "path": "src/lib/utils/tabFileActions.test.ts",
+          "change": "edit"
+        }
+      ]
+    },
+    {
+      "ts": "2026-06-23T12:58:08+02:00",
+      "note": "Connected the helper to Tab.svelte: the tab context menu now includes copy-path and open-file-location actions using existing Tauri commands, disabled for non-file tabs.",
+      "phase": "implementation",
+      "files": [
+        {
+          "path": "src/lib/components/Tab.svelte",
+          "change": "edit"
+        },
+        {
+          "path": "src/lib/utils/tabFileActions.ts",
+          "change": "edit"
+        }
+      ]
+    },
+    {
+      "ts": "2026-06-23T12:58:29+02:00",
+      "note": "Added English and Polish labels for copy full path and open file location; other languages fall back to English through the existing i18n helper.",
+      "phase": "implementation",
+      "files": [
+        {
+          "path": "src/lib/utils/i18n.ts",
+          "change": "edit"
+        }
+      ]
+    },
+    {
+      "ts": "2026-06-23T12:59:28+02:00",
+      "note": "Moved the focused node:test file from src to scripts so svelte-check does not require Node type declarations for application sources.",
+      "phase": "test-adjustment",
+      "files": [
+        {
+          "path": "scripts/tabFileActions.test.ts",
+          "change": "edit"
+        },
+        {
+          "path": "src/lib/utils/tabFileActions.test.ts",
+          "change": "edit"
+        }
+      ]
+    }
+  ],
+  "decisions": [],
+  "verification": [
+    {
+      "ts": "2026-06-23T13:01:32+02:00",
+      "command": "npx tsx --test scripts/tabFileActions.test.ts",
+      "outcome": "PASS: focused tab file action test passed with 2 node:test cases."
+    },
+    {
+      "ts": "2026-06-23T13:01:32+02:00",
+      "command": "npm run check",
+      "outcome": "PASS: svelte-check completed with 0 errors and existing warnings only."
+    },
+    {
+      "ts": "2026-06-23T13:01:32+02:00",
+      "command": "npm run build",
+      "outcome": "PASS: production frontend build completed successfully; existing Svelte/Vite warnings remain."
+    }
+  ],
+  "final_result": "Done: tab context menu has Copy Full Path and Open File Location actions, disabled for tabs without a real file path; focused test, svelte-check, and frontend build passed."
+}

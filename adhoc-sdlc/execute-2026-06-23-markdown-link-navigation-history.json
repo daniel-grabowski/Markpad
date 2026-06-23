@@ -1,0 +1,126 @@
+{
+  "type": "execute",
+  "name": "markdown-link-navigation-history",
+  "title": "Markdown link navigation history and open in new tab",
+  "project": "",
+  "keywords": [],
+  "created": "2026-06-23T14:18:01+02:00",
+  "updated": "2026-06-23T14:30:21+02:00",
+  "status": "complete",
+  "plan": "/home/dgrabowski/projects/Markpad/adhoc-sdlc/plan-2026-06-23-markdown-link-navigation-history.md",
+  "entries": [
+    {
+      "ts": "2026-06-23T14:18:01+02:00",
+      "note": "Started execution from the accepted plan. Scope: per-tab file history, Back/Forward UI and shortcuts, local Markdown link Open in New Tab.",
+      "phase": "start",
+      "files": [
+        {
+          "path": "adhoc-sdlc/plan-2026-06-23-markdown-link-navigation-history.md",
+          "change": "edit"
+        }
+      ]
+    },
+    {
+      "ts": "2026-06-23T14:18:56+02:00",
+      "note": "Added RED tests for file-history helpers and Markdown link target detection; the test fails as expected because tabHistory/markdownLinks helpers do not exist yet.",
+      "phase": "red-test",
+      "files": [
+        {
+          "path": "scripts/navigationHistory.test.ts",
+          "change": "edit"
+        }
+      ]
+    },
+    {
+      "ts": "2026-06-23T14:19:38+02:00",
+      "note": "Implemented pure tab history and Markdown link helper modules; focused test now passes 8 cases.",
+      "phase": "green-test",
+      "files": [
+        {
+          "path": "scripts/navigationHistory.test.ts",
+          "change": "edit"
+        },
+        {
+          "path": "src/lib/utils/tabHistory.ts",
+          "change": "edit"
+        },
+        {
+          "path": "src/lib/utils/markdownLinks.ts",
+          "change": "edit"
+        }
+      ]
+    },
+    {
+      "ts": "2026-06-23T14:22:17+02:00",
+      "note": "Connected pure helpers into TabManager and MarkdownViewer; file-history navigation now uses a shared helper with canCloseTab guard before back/forward.",
+      "phase": "implementation",
+      "files": [
+        {
+          "path": "src/lib/stores/tabs.svelte.ts",
+          "change": "edit"
+        },
+        {
+          "path": "src/lib/MarkdownViewer.svelte",
+          "change": "edit"
+        },
+        {
+          "path": "src/lib/utils/tabHistory.ts",
+          "change": "edit"
+        },
+        {
+          "path": "src/lib/utils/markdownLinks.ts",
+          "change": "edit"
+        }
+      ]
+    },
+    {
+      "ts": "2026-06-23T14:30:21+02:00",
+      "note": "Added Back/Forward actions to TitleBar, Alt+Left/Alt+Right shortcuts, and Open in New Tab in the document context menu for resolvable local Markdown links.",
+      "phase": "implementation",
+      "files": [
+        {
+          "path": "src/lib/components/TitleBar.svelte",
+          "change": "edit"
+        },
+        {
+          "path": "src/lib/MarkdownViewer.svelte",
+          "change": "edit"
+        },
+        {
+          "path": "src/lib/utils/i18n.ts",
+          "change": "edit"
+        }
+      ]
+    },
+    {
+      "ts": "2026-06-23T14:30:21+02:00",
+      "note": "Verification completed. Frontend unit helper tests, svelte-check, and production build pass; Rust cargo tests could not run because cargo is not installed in this environment.",
+      "phase": "verification",
+      "files": []
+    }
+  ],
+  "decisions": [],
+  "verification": [
+    {
+      "command": "npx tsx --test scripts/navigationHistory.test.ts",
+      "result": "pass"
+    },
+    {
+      "command": "npx tsx --test scripts/tabFileActions.test.ts",
+      "result": "pass"
+    },
+    {
+      "command": "npm run check",
+      "result": "pass: 0 errors, 14 existing warnings"
+    },
+    {
+      "command": "npm run build",
+      "result": "pass: existing accessibility/import/chunk warnings"
+    },
+    {
+      "command": "cargo test",
+      "result": "not run: cargo command not found"
+    }
+  ],
+  "final_result": "Implemented per-tab Markdown link file navigation history, Back/Forward UI and shortcuts, and Open in New Tab for local Markdown links."
+}

@@ -22,6 +22,14 @@
 	import { exportAsHtml as _exportHtml, exportAsPdf } from './utils/export';
 	import ZoomOverlay from './components/ZoomOverlay.svelte';
 import { processMarkdownHtml } from './utils/markdown';
+import {
+	decodeLinkPath,
+	getMarkdownLinkTarget as getRelativeMarkdownTarget,
+	hasMarkdownLinkExtension,
+	normalizeComparableMarkdownPath,
+	resolveMarkdownTargetPath,
+	type MarkdownLinkTarget as RelativeMarkdownTarget,
+} from './utils/markdownLinks.js';
 
 	const appWindow = getCurrentWindow();
 
@@ -154,10 +162,6 @@ import { t } from './utils/i18n.js';
 	// derived from tab manager
 	let currentFile = $derived(tabManager.activeTab?.path ?? '');
 	const markdownLinkExtensions = ['.md', '.markdown', '.mdown', '.mkd', '.txt'];
-	function hasMarkdownLinkExtension(path: string) {
-		const normalizedPath = path.toLowerCase();
-		return markdownLinkExtensions.some((ext) => normalizedPath.endsWith(ext));
-	}
 	let isMarkdown = $derived(hasMarkdownLinkExtension(currentFile));
 	let editorLanguage = $derived(getLanguage(currentFile));
 	let htmlContent = $derived(tabManager.activeTab?.content ?? '');
@@ -172,6 +176,8 @@ import { t } from './utils/i18n.js';
 	let isScrolled = $derived(scrollTop > 0);
 	let windowTitle = $derived(tabManager.activeTab?.title ?? 'Markpad');
 	let isScrollSynced = $derived(tabManager.activeTab?.isScrollSynced ?? false);
+	let canGoBackInFileHistory = $derived(tabManager.activeTabId ? tabManager.canGoBack(tabManager.activeTabId) : false);
+	let canGoForwardInFileHistory = $derived(tabManager.activeTabId ? tabManager.canGoForward(tabManager.activeTabId) : false);
 
 	let loadingTabs = $state<string[]>([]);
 	let isAtBottom = $state(false);
@@ -477,13 +483,14 @@ import { t } from './utils/i18n.js';
 	async function loadMarkdown(filePath: string, options: LoadMarkdownOptions = {}) {
 		showHome = false;
 		let existing = null;
+		let pendingNavigateTabId: string | null = null;
 		try {
 			if (options.resetScrollHistory || filePath !== currentFile) {
 				scrollHistory = [];
 				scrollFuture = [];
 			}
 			if (options.navigate && tabManager.activeTab) {
-				tabManager.navigate(tabManager.activeTab.id, filePath);
+				pendingNavigateTabId = tabManager.activeTab.id;
 			} else if (!options.skipTabManagement) {
 				existing = tabManager.tabs.find((t) => t.path === filePath);
 				if (existing) {
@@ -506,6 +513,9 @@ import { t } from './utils/i18n.js';
 					tab.isEditing = settings.startInEditor;
 				}
 				const [html, content, isFull] = await invoke('open_markdown_preview', { path: filePath, maxBytes: 50000 }) as [string, string, boolean];
+				if (pendingNavigateTabId) {
+					tabManager.navigate(pendingNavigateTabId, filePath);
+				}
 				const processedInfo = processMarkdownHtml(html, filePath, collapsedHeaders);
 				tabManager.updateTabContent(activeId, processedInfo);
 				tabManager.setTabRawContent(activeId, content);
@@ -557,8 +567,11 @@ import { t } from './utils/i18n.js';
 					});
 				}
 			} else {
-				if (tab) tab.isEditing = true;
 				const content = (await invoke('read_file_content', { path: filePath })) as string;
+				if (pendingNavigateTabId) {
+					tabManager.navigate(pendingNavigateTabId, filePath);
+				}
+				if (tab) tab.isEditing = true;
 				tabManager.setTabRawContent(activeId, content);
 			}
 
@@ -958,49 +971,6 @@ import { t } from './utils/i18n.js';
 		wrapper.classList.toggle('is-collapsed', !isCurrentlyCollapsed);
 	}
 
-	type RelativeMarkdownTarget = {
-		path: string;
-		hash: string;
-	};
-
-	function decodeLinkPath(path: string) {
-		try {
-			return decodeURIComponent(path);
-		} catch {
-			return path;
-		}
-	}
-
-	function normalizeComparableMarkdownPath(path: string) {
-		const normalized = path.replace(/\\/g, '/');
-		const comparable = normalized.startsWith('//')
-			? `//${normalized.slice(2).replace(/\/+/g, '/')}`
-			: normalized.replace(/\/+/g, '/');
-		if (settings.osType === 'windows' || /^[a-z]:/i.test(comparable) || comparable.startsWith('//')) {
-			return comparable.toLowerCase();
-		}
-		return comparable;
-	}
-
-	function isAbsoluteMarkdownPath(path: string) {
-		return path.startsWith('/') || path.startsWith('\\') || /^[a-z]:/i.test(path);
-	}
-
-	function getRelativeMarkdownTarget(href: string): RelativeMarkdownTarget | null {
-		const pathWithoutHash = href.split('#')[0].split('?')[0];
-		const isMarkdownTarget = hasMarkdownLinkExtension(pathWithoutHash);
-		const isWindowsDrivePath = /^[a-z]:/i.test(href);
-		const isProtocolRelativeExternal = href.startsWith('//');
-		const hasScheme = /^[a-z][a-z0-9+.-]*:/i.test(href);
-		if (!isMarkdownTarget || isProtocolRelativeExternal || (hasScheme && !isWindowsDrivePath)) return null;
-
-		const hashIndex = href.indexOf('#');
-		return {
-			path: decodeLinkPath(pathWithoutHash),
-			hash: hashIndex === -1 ? '' : href.slice(hashIndex + 1)
-		};
-	}
-
 	function scrollToAnchor(anchor: string, options: { pushHistory?: boolean } = {}) {
 		let id = decodeLinkPath(anchor);
 		if (id.startsWith('^')) {
@@ -1035,10 +1005,9 @@ import { t } from './utils/i18n.js';
 	}
 
 	async function openRelativeMarkdownTarget(target: RelativeMarkdownTarget) {
-		const isAbsoluteTarget = isAbsoluteMarkdownPath(target.path);
-		if (!currentFile && !isAbsoluteTarget) return;
-		const resolved = isAbsoluteTarget ? target.path : resolvePath(currentFile, target.path);
-		if (normalizeComparableMarkdownPath(resolved) === normalizeComparableMarkdownPath(currentFile)) {
+		const resolved = resolveMarkdownTargetPath(currentFile, target);
+		if (!resolved) return;
+		if (normalizeComparableMarkdownPath(resolved, settings.osType) === normalizeComparableMarkdownPath(currentFile, settings.osType)) {
 			if (target.hash) {
 				await scrollToAnchorWhenReady(target.hash);
 			} else if (markdownBody) {
@@ -1049,6 +1018,17 @@ import { t } from './utils/i18n.js';
 		}
 		if (tabManager.activeTabId && !(await canCloseTab(tabManager.activeTabId))) return;
 		await loadMarkdown(resolved, { navigate: true });
+		if (target.hash) {
+			await scrollToAnchorWhenReady(target.hash, { pushHistory: false }, resolved);
+		}
+	}
+
+	async function openMarkdownTargetInNewTab(target: RelativeMarkdownTarget) {
+		const resolved = resolveMarkdownTargetPath(currentFile, target);
+		if (!resolved) return;
+
+		tabManager.addTab(resolved);
+		await loadMarkdown(resolved, { skipTabManagement: true, resetScrollHistory: true });
 		if (target.hash) {
 			await scrollToAnchorWhenReady(target.hash, { pushHistory: false }, resolved);
 		}
@@ -1224,18 +1204,6 @@ import { t } from './utils/i18n.js';
 		event.stopPropagation();
 		deleteRecentFile(path);
 		if (currentFile === path) tabManager.closeTab(tabManager.activeTabId!);
-	}
-
-	function resolvePath(basePath: string, relativePath: string) {
-		if (relativePath.match(/^[a-zA-Z]:/) || relativePath.startsWith('/')) return relativePath;
-		const parts = basePath.split(/[/\\]/);
-		parts.pop();
-		for (const p of relativePath.split(/[/\\]/)) {
-			if (p === '.') continue;
-			if (p === '..') parts.pop();
-			else parts.push(p);
-		}
-		return parts.join('/');
 	}
 
 	function isYoutubeLink(url: string) {
@@ -1756,6 +1724,15 @@ import { t } from './utils/i18n.js';
 		const selection = window.getSelection();
 		const hasSelection = selection ? selection.toString().length > 0 : false;
 		const isInsideEditor = (e.target as HTMLElement).closest('.editor-container');
+		const link = (e.target as HTMLElement).closest('a') as HTMLAnchorElement | null;
+		const linkTarget = link ? getRelativeMarkdownTarget(link.getAttribute('href') || '') : null;
+		const linkItems: ContextMenuItem[] =
+			linkTarget && resolveMarkdownTargetPath(currentFile, linkTarget)
+				? [
+						{ label: t('menu.openInNewTab', uiLanguage), onClick: () => openMarkdownTargetInNewTab(linkTarget) },
+						{ separator: true },
+					]
+				: [];
 
 		// detect heading for copy ref
 		const heading = (e.target as HTMLElement).closest('h1, h2, h3, h4, h5, h6');
@@ -1793,6 +1770,7 @@ import { t } from './utils/i18n.js';
 			x: e.clientX,
 			y: e.clientY,
 			items: [
+				...linkItems,
 				...copyRefItem,
 				...mediaItems,
 				...(isEditing && isInsideEditor
@@ -2088,6 +2066,14 @@ import { t } from './utils/i18n.js';
 			e.preventDefault();
 			tabManager.cycleTab('next');
 		}
+		if (e.altKey && !cmdOrCtrl && code === 'ArrowLeft') {
+			e.preventDefault();
+			navigateFileHistory('back');
+		}
+		if (e.altKey && !cmdOrCtrl && code === 'ArrowRight') {
+			e.preventDefault();
+			navigateFileHistory('forward');
+		}
 		if (cmdOrCtrl && (key === '=' || key === '+')) {
 			e.preventDefault();
 			zoomLevel = Math.min(zoomLevel + 10, 500);
@@ -2118,6 +2104,20 @@ import { t } from './utils/i18n.js';
 		}
 	}
 
+	async function navigateFileHistory(direction: 'back' | 'forward') {
+		const activeTabId = tabManager.activeTabId;
+		if (!activeTabId) return;
+		if (!(await canCloseTab(activeTabId))) return;
+
+		const path = direction === 'back'
+			? tabManager.goBack(activeTabId)
+			: tabManager.goForward(activeTabId);
+
+		if (path) {
+			await loadMarkdown(path, { skipTabManagement: true, resetScrollHistory: true });
+		}
+	}
+
 	function pushScrollHistory() {
 		if (markdownBody) {
 			scrollHistory.push(markdownBody.scrollTop);
@@ -2126,7 +2126,7 @@ import { t } from './utils/i18n.js';
 		}
 	}
 
-	function handleMouseUp(e: MouseEvent) {
+	async function handleMouseUp(e: MouseEvent) {
 		if (e.button === 3) {
 			// Back
 			e.preventDefault();
@@ -2136,11 +2136,8 @@ import { t } from './utils/i18n.js';
 				const pos = scrollHistory.pop()!;
 				isProgrammaticScroll = true;
 				markdownBody.scrollTo({ top: pos, behavior: 'smooth' });
-			} else if (tabManager.activeTabId) {
-				const path = tabManager.goBack(tabManager.activeTabId);
-				if (path) {
-					loadMarkdown(path, { skipTabManagement: true, resetScrollHistory: true });
-				}
+			} else {
+				await navigateFileHistory('back');
 			}
 		} else if (e.button === 4) {
 			// Forward
@@ -2150,11 +2147,8 @@ import { t } from './utils/i18n.js';
 				const pos = scrollFuture.pop()!;
 				isProgrammaticScroll = true;
 				markdownBody.scrollTo({ top: pos, behavior: 'smooth' });
-			} else if (tabManager.activeTabId) {
-				const path = tabManager.goForward(tabManager.activeTabId);
-				if (path) {
-					loadMarkdown(path, { skipTabManagement: true, resetScrollHistory: true });
-				}
+			} else {
+				await navigateFileHistory('forward');
 			}
 		}
 	}
@@ -2674,6 +2668,10 @@ import { t } from './utils/i18n.js';
 		onSetTheme={(t) => (theme = t)}
 		onopenSettings={() => (showSettings = true)}
 		onfind={triggerFindAction}
+		canGoBack={canGoBackInFileHistory}
+		canGoForward={canGoForwardInFileHistory}
+		onback={() => navigateFileHistory('back')}
+		onforward={() => navigateFileHistory('forward')}
 		oncloseTab={closeTabAndWindowIfLast} />
 
 	<Settings show={showSettings} {theme} onSetTheme={(t) => (theme = t)} onclose={() => (showSettings = false)} />
