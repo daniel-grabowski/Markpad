@@ -1,0 +1,68 @@
+{
+  "type": "execute",
+  "name": "open-tabs-list-drag-reorder",
+  "title": "Drag reorder in open tabs preview list",
+  "project": "",
+  "keywords": [],
+  "created": "2026-06-23T17:11:21+02:00",
+  "updated": "2026-06-23T17:21:15+02:00",
+  "status": "done",
+  "plan": "/home/dgrabowski/projects/Markpad/adhoc-sdlc/plan-2026-06-23-open-tabs-list-drag-reorder.md",
+  "entries": [
+    {
+      "ts": "2026-06-23T17:12:32+02:00",
+      "note": "Dodano testowalne funkcje wyliczania ruchu reorder dla listy otwartych kart oraz pokrywajace je testy.",
+      "phase": "reorder-logic",
+      "files": [
+        {
+          "path": "src/lib/utils/tabListActions.ts",
+          "change": "edit"
+        },
+        {
+          "path": "scripts/tabListActions.test.ts",
+          "change": "edit"
+        }
+      ]
+    },
+    {
+      "ts": "2026-06-23T17:13:44+02:00",
+      "note": "Podlaczono drag-and-drop i Alt+ArrowUp/Alt+ArrowDown w menu otwartych kart, uzywajac istniejacego tabManager.reorderTabs.",
+      "phase": "ui-reorder",
+      "files": [
+        {
+          "path": "src/lib/components/TabList.svelte",
+          "change": "edit"
+        }
+      ]
+    }
+  ],
+  "decisions": [],
+  "verification": [
+    {
+      "ts": "2026-06-23T17:14:14+02:00",
+      "command": "npx tsx --test scripts/tabListActions.test.ts scripts/tabFileActions.test.ts scripts/navigationHistory.test.ts",
+      "outcome": "Testy utili przeszly: 15/15 pass."
+    },
+    {
+      "ts": "2026-06-23T17:14:21+02:00",
+      "command": "npm run check",
+      "outcome": "npm run check zakonczyl sie kodem 0: 0 errors, 14 istniejacych warnings."
+    },
+    {
+      "ts": "2026-06-23T17:16:14+02:00",
+      "command": "npm run build",
+      "outcome": "npm run build zakonczyl sie kodem 0."
+    },
+    {
+      "ts": "2026-06-23T17:21:05+02:00",
+      "command": "PATH=\"/home/dgrabowski/.cargo/bin:/home/dgrabowski/.nvm/versions/node/v20.19.4/lib/node_modules/@openai/codex/node_modules/@openai/codex-linux-x64/vendor/x86_64-unknown-linux-musl/codex-path:/home/dgrabowski/.local/bin:/home/dgrabowski/.local/bin:/home/dgrabowski/bin:/home/dgrabowski/.codex/tmp/arg0/codex-arg05yC8au:/home/dgrabowski/.nvm/versions/node/v20.19.4/lib/node_modules/@openai/codex/node_modules/@openai/codex-linux-x64/vendor/x86_64-unknown-linux-musl/codex-path:/home/dgrabowski/.local/bin:/home/dgrabowski/.local/bin:/home/dgrabowski/bin:/home/dgrabowski/.local/bin:/home/dgrabowski/bin:/usr/local/go/bin:/home/dgrabowski/go-workspace/bin:/home/linuxbrew/.linuxbrew/bin:/home/linuxbrew/.linuxbrew/sbin:/home/dgrabowski/.opencode/bin:/home/dgrabowski/.nvm/versions/node/v20.19.4/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/usr/lib/wsl/lib:/mnt/c/Program Files (x86)/Common Files/Oracle/Java/java8path:/mnt/c/Program Files (x86)/Common Files/Oracle/Java/javapath:/mnt/c/Program Files (x86)/Embarcadero/Studio/23.0/bin:/mnt/c/Users/Public/Documents/Embarcadero/Studio/23.0/Bpl:/mnt/c/Program Files (x86)/Embarcadero/Studio/23.0/bin64:/mnt/c/Users/Public/Documents/Embarcadero/Studio/23.0/Bpl/Win64:/mnt/c/Program Files/Microsoft/jdk-11.0.16.101-hotspot/bin:/mnt/c/Program Files (x86)/VMware/VMware Workstation/bin/:/mnt/c/WINDOWS/system32:/mnt/c/WINDOWS:/mnt/c/WINDOWS/System32/Wbem:/mnt/c/WINDOWS/System32/WindowsPowerShell/v1.0/:/mnt/c/WINDOWS/System32/OpenSSH/:/mnt/c/Program Files/Microsoft SQL Server/Client SDK/ODBC/170/Tools/Binn/:/mnt/c/Program Files (x86)/Microsoft SQL Server/150/Tools/Binn/:/mnt/c/Program Files/Microsoft SQL Server/150/Tools/Binn/:/mnt/c/Program Files/Microsoft SQL Server/150/DTS/Binn/:/mnt/c/Program Files/dotnet/:/mnt/c/Program Files/Intel/Intel(R) Memory and Storage Tool/:/mnt/c/Program Files/Microsoft VS Code/bin:/mnt/c/Program Files/Git/cmd:/mnt/c/Program Files (x86)/Microsoft SQL Server/160/Tools/Binn/:/mnt/c/Program Files/Microsoft SQL Server/160/Tools/Binn/:/mnt/c/Program Files/Microsoft SQL Server/160/DTS/Binn/:/mnt/c/Program Files (x86)/Microsoft SQL Server/160/DTS/Binn/:/mnt/c/Program Files/nodejs/:/mnt/c/dFLEX/trunk/Components/3RD/Dx/Library/RS29:/mnt/c/dFLEX/trunk/Components/3RD/Dx/Library/RS29/Win64:/mnt/c/dFLEX/trunk/Components/3RD/Dx/Library/RS29/Win64x:/mnt/c/Users/dFLEX-PRO/.local/bin:/mnt/c/Program Files/cursor/resources/app/bin:/mnt/c/Program Files/PowerToys/DSCModules/:/mnt/c/Soft/Go/bin:/mnt/c/Program Files/WireGuard/:/mnt/c/Program Files/PowerShell/7/:/Docker/host/bin:/mnt/c/Users/dFLEX-PRO/AppData/Local/Programs/Python/Python313/Scripts/:/mnt/c/Users/dFLEX-PRO/AppData/Local/Programs/Python/Python313/:/mnt/c/Users/dFLEX-PRO/AppData/Local/Programs/Python/Launcher/:/mnt/c/Users/dFLEX-PRO/AppData/Local/Microsoft/WindowsApps:/mnt/c/Program Files/Azure Data Studio/bin:/mnt/c/Users/dFLEX-PRO/.dotnet/tools:/mnt/c/Users/dFLEX-PRO/AppData/Roaming/Programs/Zero Install:/mnt/c/Users/dFLEX-PRO/.dotnet/tools:/mnt/c/Soft/TMS Setup/.tmssetup/build/bpl/Win32:/mnt/c/dFLEX/trunk/Debug/Framework:/mnt/c/dFLEX/trunk/Debug/Components:/mnt/c/dFLEX/trunk/Debug:/mnt/c/Users/Public/Documents/Embarcadero/Studio/23.0/Bpl:/mnt/c/Program Files (x86)/Raize/CS5/Deploy/Win32:/mnt/c/Users/dFLEX-PRO/AppData/Local/Programs/cursor/resources/app/bin:/mnt/c/Users/dFLEX-PRO/AppData/Local/JetBrains/Toolbox/scripts:/mnt/c/Users/dFLEX-PRO/AppData/Roaming/npm:/mnt/c/Users/dFLEX-PRO/.local/bin:/mnt/c/Users/dFLEX-PRO/AppData/Local/GitHubDesktop/bin:/mnt/c/Users/dFLEX-PRO/AppData/Local/Programs/Antigravity/bin:/mnt/c/Users/dFLEX-PRO/AppData/Local/Programs/Warp/bin:/mnt/c/Users/dFLEX-PRO/go/bin:/mnt/c/Users/dFLEX-PRO/AppData/Local/Microsoft/WinGet/Links:/snap/bin\" npm run tauri build -- --runner cargo-xwin --target x86_64-pc-windows-msvc --no-bundle",
+      "outcome": "Windows portable EXE build zakonczyl sie kodem 0; artefakt skopiowany do release/windows/Markpad_2.6.11_x64.exe, PE32+ x86-64, SHA-256 471e36888dfabd2a6e33d12c1a7d3209488023bbaebccee05c9e3dc304b004fb."
+    },
+    {
+      "ts": "2026-06-23T17:21:05+02:00",
+      "command": "git diff --check",
+      "outcome": "Final self-check: diff scoped to TabList/list util/test plus plan/journal and release EXE; git diff --check clean."
+    }
+  ],
+  "final_result": "Dodano drag-and-drop reorder w liscie podgladu otwartych kart, klawiaturowe Alt+ArrowUp/Alt+ArrowDown, testy utili oraz odswiezony Windows portable EXE."
+}

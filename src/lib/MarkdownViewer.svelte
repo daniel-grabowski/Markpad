@@ -1615,6 +1615,26 @@ import { t } from './utils/i18n.js';
 		});
 	}
 
+	async function activateTabForAction(tabId: string): Promise<boolean> {
+		const tab = tabManager.tabs.find((t) => t.id === tabId);
+		if (!tab) return false;
+		tabManager.setActive(tabId);
+		showHome = false;
+		await tick();
+		return true;
+	}
+
+	async function exportTabAsHtml(tabId: string) {
+		if (!(await activateTabForAction(tabId))) return;
+		await exportAsHtml();
+	}
+
+	async function exportTabAsPdf(tabId: string) {
+		if (!(await activateTabForAction(tabId))) return;
+		await tick();
+		exportAsPdf();
+	}
+
 	function handleNewFile() {
 		tabManager.addNewTab();
 		showHome = false;
@@ -2468,6 +2488,8 @@ import { t } from './utils/i18n.js';
 			unlisteners.push(await listen('menu-file-save-as',     () => saveContentAs()));
 			unlisteners.push(await listen('menu-file-export-html', () => exportAsHtml()));
 			unlisteners.push(await listen('menu-file-export-pdf', () => exportAsPdf()));
+			unlisteners.push(await listen('menu-tab-export-html', (event) => exportTabAsHtml(event.payload as string)));
+			unlisteners.push(await listen('menu-tab-export-pdf', (event) => exportTabAsPdf(event.payload as string)));
 			unlisteners.push(
 				await appWindow.onCloseRequested(async (event) => {
 					console.log('onCloseRequested triggered');

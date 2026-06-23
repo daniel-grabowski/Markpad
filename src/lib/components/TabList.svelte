@@ -4,6 +4,11 @@
 	import ContextMenu, { type ContextMenuItem } from './ContextMenu.svelte';
 	import { t } from '../utils/i18n.js';
 	import { settings } from '../stores/settings.svelte.js';
+	import {
+		getOpenTabAdjacentReorderMove,
+		getOpenTabListItems,
+		getOpenTabReorderMove,
+	} from '../utils/tabListActions.js';
 	import { emit } from '@tauri-apps/api/event';
 
 	import { flip } from 'svelte/animate';
@@ -26,6 +31,18 @@
 	let scrollContainer = $state<HTMLElement | null>(null);
 	let showLeftArrow = $state(false);
 	let showRightArrow = $state(false);
+	let openTabsMenuOpen = $state(false);
+	let openTabsMenuLeft = $state(0);
+	let openTabsMenuTop = $state(0);
+	let openTabItems = $derived(getOpenTabListItems(tabManager.tabs, tabManager.activeTabId));
+	let openTabsDraggingId = $state<string | null>(null);
+	let openTabsDragOverId = $state<string | null>(null);
+	let openTabsJustDragged = false;
+	let openTabsDragState = $state<{
+		tabId: string;
+		startY: number;
+		isDragging: boolean;
+	} | null>(null);
 
 	// Drag state
 	let draggingId = $state<string | null>(null);
@@ -169,12 +186,146 @@
 			items: [
 				{ label: t('menu.newFile', currentLang), shortcut: 'Ctrl+T', onClick: () => emit('menu-tab-new') },
 				{ label: t('menu.undoCloseTab', currentLang), shortcut: 'Ctrl+Shift+T', onClick: () => emit('menu-tab-undo') },
+				{ separator: true },
+				{ label: `${settings.fitTabsToWidth ? '✓ ' : ''}${t('menu.fitTabsToWidth', currentLang)}`, onClick: () => settings.toggleFitTabsToWidth() },
 			]
 		};
 	}
+
+	function selectTab(tabId: string) {
+		if (openTabsJustDragged) return;
+
+		tabManager.setActive(tabId);
+		closeOpenTabsMenu();
+		ontabclick?.();
+	}
+
+	function clearOpenTabsDragState() {
+		openTabsDraggingId = null;
+		openTabsDragOverId = null;
+		openTabsDragState = null;
+	}
+
+	function closeOpenTabsMenu() {
+		openTabsMenuOpen = false;
+		clearOpenTabsDragState();
+	}
+
+	function markOpenTabsDragged() {
+		openTabsJustDragged = true;
+		setTimeout(() => {
+			openTabsJustDragged = false;
+		}, 50);
+	}
+
+	function focusOpenTabItem(tabId: string) {
+		tick().then(() => {
+			const item = Array.from(document.querySelectorAll<HTMLButtonElement>('.open-tab-item'))
+				.find((button) => button.dataset.openTabId === tabId);
+			item?.focus();
+		});
+	}
+
+	function reorderOpenTab(draggedId: string, targetId: string) {
+		const move = getOpenTabReorderMove(tabManager.tabs, draggedId, targetId);
+		if (!move) return false;
+
+		tabManager.reorderTabs(move.fromIndex, move.toIndex);
+		focusOpenTabItem(draggedId);
+		return true;
+	}
+
+	function handleOpenTabMouseDown(e: MouseEvent, tabId: string) {
+		if (e.button !== 0) return;
+
+		e.stopPropagation();
+		e.preventDefault();
+
+		openTabsDragState = {
+			tabId,
+			startY: e.clientY,
+			isDragging: false,
+		};
+
+		window.addEventListener('mousemove', handleOpenTabWindowMouseMove);
+		window.addEventListener('mouseup', handleOpenTabWindowMouseUp);
+	}
+
+	function handleOpenTabWindowMouseMove(e: MouseEvent) {
+		if (!openTabsDragState) return;
+
+		e.preventDefault();
+		if (!openTabsDragState.isDragging) {
+			if (Math.abs(e.clientY - openTabsDragState.startY) <= 4) return;
+
+			openTabsDragState.isDragging = true;
+			openTabsDraggingId = openTabsDragState.tabId;
+		}
+
+		const target = document.elementFromPoint(e.clientX, e.clientY);
+		const item = target instanceof HTMLElement
+			? target.closest<HTMLButtonElement>('.open-tab-item')
+			: null;
+		const targetId = item?.dataset.openTabId;
+
+		if (!targetId || targetId === openTabsDragState.tabId) {
+			openTabsDragOverId = null;
+			return;
+		}
+
+		openTabsDragOverId = targetId;
+		reorderOpenTab(openTabsDragState.tabId, targetId);
+	}
+
+	function handleOpenTabWindowMouseUp() {
+		const didDrag = openTabsDragState?.isDragging ?? false;
+
+		if (didDrag) {
+			markOpenTabsDragged();
+		}
+
+		clearOpenTabsDragState();
+		window.removeEventListener('mousemove', handleOpenTabWindowMouseMove);
+		window.removeEventListener('mouseup', handleOpenTabWindowMouseUp);
+	}
+
+	function handleOpenTabItemKeyDown(e: KeyboardEvent, tabId: string) {
+		if (!e.altKey || (e.key !== 'ArrowUp' && e.key !== 'ArrowDown')) return;
+
+		e.preventDefault();
+		e.stopPropagation();
+
+		const move = getOpenTabAdjacentReorderMove(tabManager.tabs, tabId, e.key === 'ArrowUp' ? 'up' : 'down');
+		if (!move) return;
+
+		tabManager.reorderTabs(move.fromIndex, move.toIndex);
+		focusOpenTabItem(tabId);
+	}
+
+	function toggleOpenTabsMenu(e: MouseEvent) {
+		e.stopPropagation();
+		const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+		const menuWidth = Math.min(360, window.innerWidth - 24);
+		openTabsMenuLeft = Math.max(12, Math.min(rect.right - menuWidth, window.innerWidth - menuWidth - 12));
+		openTabsMenuTop = rect.bottom + 4;
+		openTabsMenuOpen = !openTabsMenuOpen;
+		if (!openTabsMenuOpen) {
+			clearOpenTabsDragState();
+		}
+	}
+
+	function handleWindowClick() {
+		closeOpenTabsMenu();
+	}
+
+	function handleWindowKeyDown(e: KeyboardEvent) {
+		if (e.key === 'Escape') closeOpenTabsMenu();
+	}
 </script>
 
-<div class="tab-list-wrapper">
+<svelte:window onclick={handleWindowClick} onkeydown={handleWindowKeyDown} />
+
+<div class="tab-list-wrapper" class:fit-tabs={settings.fitTabsToWidth}>
 	<div class="scroll-viewport">
 		<div class="scroll-shadow left" class:visible={showLeftArrow}></div>
 
@@ -203,6 +354,7 @@
 						{tab}
 						isActive={!showHome && tabManager.activeTabId === tab.id}
 						isLast={i === tabManager.tabs.length - 1}
+						fitToWidth={settings.fitTabsToWidth}
 						onclick={() => {
 							if (justDragged) return;
 							tabManager.setActive(tab.id);
@@ -220,6 +372,58 @@
 		{/if}
 
 		<div class="scroll-shadow right" class:visible={showRightArrow}></div>
+	</div>
+
+	<div class="open-tabs-container">
+		<button
+			class="open-tabs-btn"
+			class:active={openTabsMenuOpen}
+			onclick={toggleOpenTabsMenu}
+			onmousedown={(e) => e.preventDefault()}
+			title={t('tooltip.openTabs', settings.language)}
+			aria-label={t('tooltip.openTabs', settings.language)}>
+			<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+				<line x1="8" y1="6" x2="21" y2="6"></line>
+				<line x1="8" y1="12" x2="21" y2="12"></line>
+				<line x1="8" y1="18" x2="21" y2="18"></line>
+				<circle cx="3.5" cy="6" r="1"></circle>
+				<circle cx="3.5" cy="12" r="1"></circle>
+				<circle cx="3.5" cy="18" r="1"></circle>
+			</svg>
+		</button>
+
+		{#if openTabsMenuOpen}
+			<div class="open-tabs-menu show-dropdown" style="left: {openTabsMenuLeft}px; top: {openTabsMenuTop}px;">
+				<div class="open-tabs-header">{t('menu.openTabs', settings.language)}</div>
+				{#each openTabItems as item (item.id)}
+					<button
+						class="open-tab-item"
+						class:active={item.isActive}
+						class:drag-source={openTabsDraggingId === item.id}
+						class:drag-over={openTabsDragOverId === item.id}
+						data-open-tab-id={item.id}
+						onclick={(e) => {
+							e.stopPropagation();
+							selectTab(item.id);
+						}}
+						onmousedown={(e) => handleOpenTabMouseDown(e, item.id)}
+						onkeydown={(e) => handleOpenTabItemKeyDown(e, item.id)}>
+						<span class="open-tab-state" class:dirty={item.isDirty}></span>
+						<span class="open-tab-text">
+							<span class="open-tab-title">{item.title}</span>
+							{#if item.pathLabel}
+								<span class="open-tab-path">{item.pathLabel}</span>
+							{/if}
+						</span>
+					</button>
+				{/each}
+				<div class="open-tabs-divider"></div>
+				<button class="open-tab-option" onclick={() => settings.toggleFitTabsToWidth()}>
+					<span class="open-tab-check">{settings.fitTabsToWidth ? '✓' : ''}</span>
+					<span>{t('menu.fitTabsToWidth', settings.language)}</span>
+				</button>
+			</div>
+		{/if}
 	</div>
 
 	<button class="new-tab-btn" onclick={onnewTab} onmousedown={(e) => e.preventDefault()} title={`${t('tooltip.newTab', settings.language)} (Ctrl+T)`}>
@@ -248,6 +452,10 @@
 		overflow: hidden;
 		min-width: 0;
 		max-width: 100%;
+	}
+
+	.tab-list-wrapper.fit-tabs .scroll-viewport {
+		flex: 1 1 auto;
 	}
 
 	.scroll-shadow {
@@ -290,6 +498,11 @@
 		-ms-overflow-style: none;
 	}
 
+	.tab-list-wrapper.fit-tabs .tab-list-container {
+		flex: 1 1 auto;
+		overflow-x: hidden;
+	}
+
 	.tab-list-container::-webkit-scrollbar {
 		display: none;
 	}
@@ -318,6 +531,168 @@
 		color: var(--color-fg-default);
 	}
 
+	.open-tabs-container {
+		position: relative;
+		flex-shrink: 0;
+		z-index: 22;
+	}
+
+	.open-tabs-btn {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 28px;
+		height: 28px;
+		margin: 4px 0 4px 4px;
+		border: none;
+		background: transparent;
+		color: var(--color-fg-muted);
+		border-radius: 8px;
+		cursor: pointer;
+		transition:
+			background 0.1s,
+			color 0.1s;
+	}
+
+	.open-tabs-btn:hover,
+	.open-tabs-btn.active {
+		background: var(--color-neutral-muted);
+		color: var(--color-fg-default);
+	}
+
+	.open-tabs-menu.show-dropdown {
+		position: fixed;
+		display: flex;
+		flex-direction: column;
+		width: min(360px, calc(100vw - 24px));
+		max-height: min(460px, calc(100vh - 64px));
+		overflow-y: auto;
+		padding: 6px;
+		background-color: var(--color-canvas-default);
+		border: 1px solid var(--color-border-default);
+		border-radius: 6px;
+		box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+		font-family: var(--win-font);
+		z-index: 10006;
+	}
+
+	.open-tabs-header {
+		padding: 6px 8px 8px;
+		color: var(--color-fg-muted);
+		font-size: 11px;
+		font-weight: 600;
+		text-transform: uppercase;
+		letter-spacing: 0;
+	}
+
+	.open-tab-item,
+	.open-tab-option {
+		position: relative;
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		width: 100%;
+		border: none;
+		background: transparent;
+		color: var(--color-fg-default);
+		border-radius: 4px;
+		padding: 7px 8px;
+		font-family: inherit;
+		text-align: left;
+		cursor: default;
+	}
+
+	.open-tab-item {
+		cursor: grab;
+		user-select: none;
+	}
+
+	.open-tab-item:active {
+		cursor: grabbing;
+	}
+
+	.open-tab-item::before {
+		content: '';
+		width: 6px;
+		height: 16px;
+		flex: 0 0 6px;
+		opacity: 0.55;
+		background-image: radial-gradient(circle, var(--color-fg-muted) 1px, transparent 1px);
+		background-position: center;
+		background-size: 3px 4px;
+	}
+
+	.open-tab-item:hover,
+	.open-tab-item.active,
+	.open-tab-option:hover {
+		background: var(--color-neutral-muted);
+	}
+
+	.open-tab-item.drag-source {
+		opacity: 0.45;
+	}
+
+	.open-tab-item.drag-over {
+		background: color-mix(in srgb, var(--color-accent-fg) 14%, transparent);
+		box-shadow: inset 2px 0 0 var(--color-accent-fg);
+	}
+
+	.open-tab-item:focus-visible {
+		outline: 2px solid var(--color-accent-fg);
+		outline-offset: -2px;
+	}
+
+	.open-tab-state {
+		width: 8px;
+		height: 8px;
+		border-radius: 50%;
+		flex: 0 0 auto;
+	}
+
+	.open-tab-state.dirty {
+		background: var(--color-fg-muted);
+	}
+
+	.open-tab-item.active .open-tab-state {
+		background: var(--color-accent-fg);
+	}
+
+	.open-tab-text {
+		display: flex;
+		flex-direction: column;
+		gap: 2px;
+		min-width: 0;
+		flex: 1;
+	}
+
+	.open-tab-title,
+	.open-tab-path {
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.open-tab-title {
+		font-size: 13px;
+	}
+
+	.open-tab-path {
+		color: var(--color-fg-muted);
+		font-size: 11px;
+	}
+
+	.open-tabs-divider {
+		height: 1px;
+		background: var(--color-border-muted);
+		margin: 6px 0;
+	}
+
+	.open-tab-check {
+		width: 12px;
+		color: var(--color-accent-fg);
+		text-align: center;
+	}
+
 	.tab-list-spacer {
 		flex: 1;
 		height: 100%;
@@ -326,6 +701,12 @@
 
 	.tab-item-wrapper {
 		transition: opacity 0.1s;
+		flex: 0 0 auto;
+		min-width: 0;
+	}
+
+	.tab-list-wrapper.fit-tabs .tab-item-wrapper {
+		flex: 1 1 0;
 	}
 
 	.tab-item-wrapper.drag-opacity {

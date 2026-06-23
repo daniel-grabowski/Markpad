@@ -1,0 +1,97 @@
+{
+  "type": "execute",
+  "name": "open-tabs-list-and-tab-export-actions",
+  "title": "Lista otwartych kart, zwężanie kart i eksport z menu karty",
+  "project": "",
+  "keywords": [],
+  "created": "2026-06-23T16:48:28+02:00",
+  "updated": "2026-06-23T17:00:50+02:00",
+  "status": "done",
+  "plan": "/home/dgrabowski/projects/Markpad/adhoc-sdlc/plan-2026-06-23-open-tabs-list-and-tab-export-actions.md",
+  "entries": [
+    {
+      "ts": "2026-06-23T16:49:41+02:00",
+      "note": "Dodano testy RED dla listy otwartych kart i akcji eksportu w menu karty; oba testy padają na brakujących helperach.",
+      "phase": "tests",
+      "files": [
+        {
+          "path": "scripts/tabFileActions.test.ts",
+          "change": "edit"
+        },
+        {
+          "path": "scripts/tabListActions.test.ts",
+          "change": "edit"
+        }
+      ]
+    },
+    {
+      "ts": "2026-06-23T16:50:12+02:00",
+      "note": "Dodano helpery getTabExportActions i getOpenTabListItems; testy tabFileActions i tabListActions przechodzą.",
+      "phase": "logic",
+      "files": [
+        {
+          "path": "src/lib/utils/tabFileActions.ts",
+          "change": "edit"
+        },
+        {
+          "path": "src/lib/utils/tabListActions.ts",
+          "change": "edit"
+        },
+        {
+          "path": "scripts/tabFileActions.test.ts",
+          "change": "edit"
+        },
+        {
+          "path": "scripts/tabListActions.test.ts",
+          "change": "edit"
+        }
+      ]
+    },
+    {
+      "ts": "2026-06-23T16:54:23+02:00",
+      "note": "Dodano dropdown listy otwartych kart, zapisane ustawienie zwężania kart oraz eksport HTML/PDF z menu kontekstowego karty.",
+      "phase": "ui",
+      "files": [
+        {
+          "path": "src/lib/components/TabList.svelte",
+          "change": "edit"
+        },
+        {
+          "path": "src/lib/components/Tab.svelte",
+          "change": "edit"
+        },
+        {
+          "path": "src/lib/MarkdownViewer.svelte",
+          "change": "edit"
+        },
+        {
+          "path": "src/lib/stores/settings.svelte.ts",
+          "change": "edit"
+        },
+        {
+          "path": "src/lib/utils/i18n.ts",
+          "change": "edit"
+        }
+      ]
+    }
+  ],
+  "decisions": [],
+  "verification": [
+    {
+      "ts": "2026-06-23T16:59:03+02:00",
+      "command": "npx tsx --test scripts/tabFileActions.test.ts scripts/tabListActions.test.ts scripts/navigationHistory.test.ts && npm run check && npm run build && git diff --check",
+      "outcome": "npx tsx --test scripts/tabFileActions.test.ts scripts/tabListActions.test.ts scripts/navigationHistory.test.ts: 13/13 pass. npm run check: 0 errors, 14 existing warnings. npm run build: exit 0 with existing warning classes. git diff --check: exit 0."
+    },
+    {
+      "ts": "2026-06-23T17:00:27+02:00",
+      "command": "agent_browser open http://127.0.0.1:5173/ && agent_browser console",
+      "outcome": "Browser smoke via Vite opened http://127.0.0.1:5173/, but direct browser mode is not a valid UI oracle for this Tauri app: console reports missing Tauri invoke API outside the Tauri shell."
+    },
+    {
+      "ts": "2026-06-23T17:00:40+02:00",
+      "command": "git status --short --branch && git diff --stat",
+      "outcome": "Final self-check: diff contains open tabs dropdown, fit-tabs setting/style, tab context export actions, helper tests, and adhoc-sdlc plan/journal. No unrelated files were changed outside generated build outputs ignored by git."
+    }
+  ],
+  "final_result": "Zaimplementowano listę otwartych kart, zapisane zwężanie kart do szerokości paska oraz eksport HTML/PDF z menu kontekstowego karty. Weryfikacja automatyczna i build przeszły; browser smoke przez sam Vite jest ograniczony przez brak API Tauri poza powłoką Tauri."
+}

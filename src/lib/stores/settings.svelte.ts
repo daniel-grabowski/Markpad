@@ -133,6 +133,7 @@ export class SettingsStore {
 	renderLineHighlight = $state('line');
 	highlightColor = $state('yellow');
 	showTabs = $state(true);
+	fitTabsToWidth = $state(false);
 	restoreStateOnReopen = $state(true);
 	zenMode = $state(false);
 	showToc = $state(false);
@@ -181,6 +182,7 @@ export class SettingsStore {
 			const savedWordCount = localStorage.getItem('editor.wordCount');
 			const savedRenderLineHighlight = localStorage.getItem('editor.renderLineHighlight');
 			const savedShowTabs = localStorage.getItem('editor.showTabs');
+			const savedFitTabsToWidth = localStorage.getItem('editor.fitTabsToWidth');
 			const savedRestoreStateOnReopen = localStorage.getItem('editor.restoreStateOnReopen');
 			const savedZenMode = localStorage.getItem('editor.zenMode');
 			const savedPreZenState = localStorage.getItem('editor.preZenState');
@@ -226,6 +228,7 @@ export class SettingsStore {
 			if (savedWordCount !== null) this.wordCount = savedWordCount === 'true';
 			if (savedRenderLineHighlight !== null) this.renderLineHighlight = savedRenderLineHighlight;
 			if (savedShowTabs !== null) this.showTabs = savedShowTabs === 'true';
+			if (savedFitTabsToWidth !== null) this.fitTabsToWidth = savedFitTabsToWidth === 'true';
 			if (savedRestoreStateOnReopen !== null) this.restoreStateOnReopen = savedRestoreStateOnReopen === 'true';
 			if (savedZenMode !== null) this.zenMode = savedZenMode === 'true';
 			if (savedOccurrencesHighlight !== null) this.occurrencesHighlight = savedOccurrencesHighlight === 'true';
@@ -293,6 +296,7 @@ export class SettingsStore {
 					localStorage.setItem('editor.wordCount', String(this.wordCount));
 					localStorage.setItem('editor.renderLineHighlight', this.renderLineHighlight);
 					localStorage.setItem('editor.showTabs', String(this.showTabs));
+					localStorage.setItem('editor.fitTabsToWidth', String(this.fitTabsToWidth));
 					localStorage.setItem('editor.restoreStateOnReopen', String(this.restoreStateOnReopen));
 					localStorage.setItem('editor.zenMode', String(this.zenMode));
 					localStorage.setItem('editor.occurrencesHighlight', String(this.occurrencesHighlight));
@@ -362,6 +366,10 @@ export class SettingsStore {
 
 	toggleTabs() {
 		this.showTabs = !this.showTabs;
+	}
+
+	toggleFitTabsToWidth() {
+		this.fitTabsToWidth = !this.fitTabsToWidth;
 	}
 
 	toggleRestoreStateOnReopen() {

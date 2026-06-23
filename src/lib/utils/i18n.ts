@@ -162,6 +162,8 @@ export const translations: Record<LanguageCode, Translation> = {
             exit: 'Exit',
             zenMode: 'Zen Mode',
             tabs: '{{action}} Tabs',
+            openTabs: 'Open Tabs',
+            fitTabsToWidth: 'Fit Tabs to Width',
             back: 'Back',
             forward: 'Forward',
             openLocation: 'Open Location',
@@ -313,6 +315,7 @@ export const translations: Record<LanguageCode, Translation> = {
             dockToc: 'Dock Table of Contents',
             showTableOfContents: 'Show Table of Contents',
             hideTableOfContents: 'Hide Table of Contents',
+            openTabs: 'Open Tabs',
             newTab: 'New Tab',
             close: 'Close',
             find: 'Find'
@@ -2722,6 +2725,8 @@ export const translations: Record<LanguageCode, Translation> = {
             exit: 'Wyjście',
             zenMode: 'Tryb Zen',
             tabs: '{{action}} karty',
+            openTabs: 'Otwarte karty',
+            fitTabsToWidth: 'Dopasuj karty do szerokości',
             back: 'Wstecz',
             forward: 'Dalej',
             openLocation: 'Otwórz lokalizację',
@@ -2825,7 +2830,8 @@ export const translations: Record<LanguageCode, Translation> = {
             editFile: 'Edytuj plik',
             changeTheme: 'Zmień motyw',
             zoomIn: 'Powiększ',
-            zoomOut: 'Pomniejsz'
+            zoomOut: 'Pomniejsz',
+            openTabs: 'Otwarte karty'
         },
         uninstaller: {
             uninstallMarkpad: 'Czy chcesz odinstalować Markpad?',

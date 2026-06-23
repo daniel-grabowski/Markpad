@@ -5,12 +5,13 @@
 	import { emit } from '@tauri-apps/api/event';
 	import { t } from '../utils/i18n.js';
 	import { settings } from '../stores/settings.svelte.js';
-	import { getTabFileActions, hasRealFilePath } from '../utils/tabFileActions.js';
+	import { getTabExportActions, getTabFileActions, hasRealFilePath } from '../utils/tabFileActions.js';
 
-	let { tab, isActive, isLast, onclick, onclose } = $props<{
+	let { tab, isActive, isLast, fitToWidth = false, onclick, onclose } = $props<{
 		tab: Tab;
 		isActive: boolean;
 		isLast?: boolean;
+		fitToWidth?: boolean;
 		onclick: () => void;
 		onclose: (e: MouseEvent) => void;
 	}>();
@@ -60,6 +61,11 @@
 			disabled: action.disabled,
 			onClick: action.id === 'copy-path' ? copyTabPath : openTabFileLocation,
 		}));
+		const exportActionItems: ContextMenuItem[] = getTabExportActions(tab).map((action) => ({
+			label: t(action.labelKey, currentLang),
+			disabled: action.disabled,
+			onClick: () => emit(action.id === 'export-html' ? 'menu-tab-export-html' : 'menu-tab-export-pdf', tab.id),
+		}));
 
 		tabContextMenu = {
 			show: true,
@@ -72,6 +78,8 @@
 				{ separator: true },
 				...fileActionItems,
 				{ separator: true },
+				...exportActionItems,
+				{ separator: true },
 				{ label: t('menu.closeFile', currentLang), shortcut: 'Ctrl+W', onClick: () => emit('menu-tab-close', tab.id) },
 				{ label: t('menu.closeOtherTabs', currentLang), onClick: () => emit('menu-tab-close-others', tab.id) },
 				{ label: t('menu.closeTabsToRight', currentLang), onClick: () => emit('menu-tab-close-right', tab.id) },
@@ -82,7 +90,7 @@
 
 <!-- svelte-ignore a11y_click_events_have_key_events -->
 <!-- svelte-ignore a11y_no_static_element_interactions -->
-<div class="tab {isActive ? 'active' : ''}" class:last={isLast} role="group" title={tab.path || 'Recents'} oncontextmenu={handleContextMenu}>
+<div class="tab {isActive ? 'active' : ''}" class:last={isLast} class:fit-to-width={fitToWidth} role="group" title={tab.path || 'Recents'} oncontextmenu={handleContextMenu}>
 	<button class="tab-content-btn" onclick={onclick} onmousedown={(e) => {
 		if (e.button === 0) e.preventDefault();
 		handleMiddleClick(e);
@@ -142,6 +150,12 @@
 		color: var(--color-fg-default);
 	}
 
+	.tab.fit-to-width {
+		width: 100%;
+		min-width: 0;
+		max-width: none;
+	}
+
 	.tab-content-btn {
 		appearance: none;
 		background: transparent;
@@ -161,10 +175,16 @@
 		text-align: left;
 	}
 
+	.tab.fit-to-width .tab-content-btn {
+		min-width: 0;
+		padding-left: 8px;
+	}
+
 	.tab-label {
 		white-space: nowrap;
 		overflow: hidden;
 		text-overflow: ellipsis;
+		min-width: 0;
 	}
 
 	.tab-actions {
