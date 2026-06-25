@@ -25,6 +25,7 @@
 - Auto-reload
 - Zen mode
 - Table of contents
+- Configurable default mode for new files (editor or preview)
 - Custom themes
 - Paste images into editor
 - Custom typography and font settings
