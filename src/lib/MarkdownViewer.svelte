@@ -5,13 +5,14 @@
 	import { onMount, tick, untrack } from 'svelte';
 	import { fly } from 'svelte/transition';
 	import { cubicOut } from 'svelte/easing';
-	import { openUrl } from '@tauri-apps/plugin-opener';
+	import { openPath, openUrl } from '@tauri-apps/plugin-opener';
 	import { open, save, ask } from '@tauri-apps/plugin-dialog';
 	import Installer from './Installer.svelte';
 	import Uninstaller from './Uninstaller.svelte';
 	import Settings from './components/Settings.svelte';
 	import TitleBar from './components/TitleBar.svelte';
 	import Editor from './components/Editor.svelte';
+	import EditorToolbar from './components/EditorToolbar.svelte';
 	import Modal from './components/Modal.svelte';
 	import UpdateDialog from './components/UpdateDialog.svelte';
 	import { updateStore } from './stores/update.svelte.js';
@@ -20,6 +21,7 @@
 	import Toast from './components/Toast.svelte';
 	import FindBar from './components/FindBar.svelte';
 	import { exportAsHtml as _exportHtml, exportAsPdf } from './utils/export';
+	import { askToOpenExportedFile } from './utils/openExportedFile.js';
 	import ZoomOverlay from './components/ZoomOverlay.svelte';
 import { processMarkdownHtml } from './utils/markdown';
 import {
@@ -93,6 +95,7 @@ import { t } from './utils/i18n.js';
 		handleDroppedFile: (path: string, x: number, y: number) => Promise<void>;
 		updateDragCaret: (x: number, y: number) => void;
 		hideDragCaret: () => void;
+		runEditorAction: (actionId: string) => void;
 		undo: () => void;
 		redo: () => void;
 		revealHeader: (text: string) => void;
@@ -1833,12 +1836,30 @@ import { t } from './utils/i18n.js';
 
 	async function exportAsHtml() {
 		const tab = tabManager.activeTab;
-		await _exportHtml({
-			htmlContent: htmlContent,
-			markdownBody,
+		const result = await _exportHtml({
+			rawContent,
 			tabTitle: tab?.title || '',
 			tabPath: tab?.path || '',
 		});
+		if (result?.missingImages) {
+			addToast(`Exported HTML, but ${result.missingImages} local image(s) could not be embedded.`, 'warning');
+		}
+		if (result?.path) {
+			const openResult = await askToOpenExportedFile(result.path, 'HTML', {
+				ask,
+				openPath,
+				labels: {
+					title: t('modal.openExportedFileTitle', settings.language),
+					message: t('modal.openExportedHtmlMessage', settings.language),
+				},
+				onError: (error) => {
+					console.error('Failed to open exported HTML file', result.path, error);
+				},
+			});
+			if (openResult === 'failed') {
+				addToast(t('toast.openExportedFileFailed', settings.language), 'error');
+			}
+		}
 	}
 
 	async function activateTabForAction(tabId: string): Promise<boolean> {
@@ -1875,6 +1896,20 @@ import { t } from './utils/i18n.js';
 			],
 		});
 		if (selected && typeof selected === 'string') loadMarkdown(selected);
+	}
+
+	async function reloadFromDisk() {
+		const activeId = tabManager.activeTabId;
+		const tab = tabManager.activeTab;
+		if (!activeId || !tab?.path) return;
+		if (!(await canCloseTab(activeId))) return;
+
+		await loadMarkdown(tab.path, {
+			preserveEditState: true,
+			skipTabManagement: true,
+			resetScrollHistory: true,
+		});
+		addToast('Reloaded from disk', 'info');
 	}
 
 	function toggleHome() {
@@ -2275,10 +2310,16 @@ import { t } from './utils/i18n.js';
 			if (key === 'w') return; // → menu-file-close
 			if (key === 's') return; // → menu-file-save
 			if (key === 't') return; // → menu-file-new
+			if (key === 'o') return; // → menu-file-open
 		}
 
 		const isSplit = tabManager.activeTab?.isSplit;
 
+		if (!cmdOrCtrl && !e.shiftKey && !e.altKey && code === 'F5') {
+			e.preventDefault();
+			reloadFromDisk();
+			return;
+		}
 		if (cmdOrCtrl && key === 'w') {
 			e.preventDefault();
 			closeFile();
@@ -2291,12 +2332,14 @@ import { t } from './utils/i18n.js';
 			e.preventDefault();
 			handleNewFile();
 		}
-		if (cmdOrCtrl && key === 'q') {
+		if (cmdOrCtrl && !e.shiftKey && !e.altKey && key === 'o') {
 			e.preventDefault();
-			import('@tauri-apps/api/window').then(({ getCurrentWindow }) => {
-				getCurrentWindow().close();
-			});
+			selectFile();
 		}
+			if (cmdOrCtrl && key === 'q') {
+				e.preventDefault();
+				getCurrentWindow().close();
+			}
 		if (cmdOrCtrl && !e.shiftKey && !e.altKey && (code === 'Backslash' || code === 'IntlBackslash')) {
 			e.preventDefault();
 			if (tabManager.activeTabId) toggleSplitView(tabManager.activeTabId, true);
@@ -2561,12 +2604,11 @@ import { t } from './utils/i18n.js';
 
 		let unlisteners: (() => void)[] = [];
 
-		invoke('show_window').catch(console.error);
+			invoke('show_window').catch(console.error);
 
-		const init = async () => {
-			const { getCurrentWindow } = await import('@tauri-apps/api/window');
-			const appWindow = getCurrentWindow();
-			const appMode = (await invoke('get_app_mode')) as any;
+			const init = async () => {
+				const appWindow = getCurrentWindow();
+				const appMode = (await invoke('get_app_mode')) as any;
 
 			if (settings.restoreStateOnReopen) {
 				const savedData = localStorage.getItem('savedTabsData');
@@ -2705,6 +2747,7 @@ import { t } from './utils/i18n.js';
 			unlisteners.push(await listen('menu-app-quit',         () => appExit()));
 			unlisteners.push(await listen('menu-file-new',         () => handleNewFile()));
 			unlisteners.push(await listen('menu-file-open',        () => selectFile()));
+			unlisteners.push(await listen('menu-file-reload',      () => reloadFromDisk()));
 			unlisteners.push(await listen('menu-file-close',       () => closeFile()));
 			unlisteners.push(await listen('menu-file-save',        () => {
 				if (isEditing || tabManager.activeTab?.isSplit) saveContent();
@@ -2914,6 +2957,7 @@ import { t } from './utils/i18n.js';
 		onopenFile={selectFile}
 		onsaveFile={saveContent}
 		onsaveFileAs={saveContentAs}
+		onreloadFromDisk={reloadFromDisk}
 		onexportHtml={exportAsHtml}
 		onexportPdf={exportAsPdf}
 		onexit={appExit}
@@ -2956,6 +3000,7 @@ import { t } from './utils/i18n.js';
 		onopenFile={selectFile}
 		onsaveFile={saveContent}
 		onsaveFileAs={saveContentAs}
+		onreloadFromDisk={reloadFromDisk}
 		onexportHtml={exportAsHtml}
 		onexportPdf={exportAsPdf}
 		onexit={appExit}
@@ -3001,6 +3046,11 @@ import { t } from './utils/i18n.js';
 					<!-- Editor Pane -->
 					<div bind:this={editorPaneEl} class="pane editor-pane" class:active={isEditing || isSplit} style="flex: {isSplit ? tabManager.activeTab.splitRatio : isEditing ? 1 : 0}">
 						{#if isEditing || isSplit}
+							<EditorToolbar
+								modifier={settings.osType === 'macos' ? 'Cmd' : 'Ctrl'}
+								toolbarOrder={settings.editorToolbarOrder}
+								toolbarHidden={settings.editorToolbarHidden}
+								onaction={(actionId) => editorPane?.runEditorAction(actionId)} />
 							<Editor
 								bind:this={editorPane}
 								bind:value={tabManager.activeTab.rawContent}

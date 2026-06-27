@@ -1,0 +1,145 @@
+{
+  "type": "execute",
+  "name": "markpad-global-toolbar-settings-and-resizable-settings",
+  "title": "Markpad: global toolbar settings and resizable Settings",
+  "project": "",
+  "keywords": [],
+  "original_prompt": "Dodac osobne ustawienia globalnego toolbaru na belce okna, zachowac nowy toolbar edycji tekstu jako osobna funkcje, rozdzielic je w Settings oraz umozliwic zmiane rozmiaru okna ustawien.",
+  "created": "2026-06-27T14:07:46+02:00",
+  "updated": "2026-06-27T14:20:18+02:00",
+  "status": "done",
+  "plan": "/home/dgrabowski/projects/Markpad/adhoc-sdlc/plan-2026-06-27-markpad-global-toolbar-settings-and-resizable-settings.md",
+  "entries": [
+    {
+      "ts": "2026-06-27T14:07:46+02:00",
+      "note": "Started execution from confirmed plan. Mode: no extra brainstorming, no read-only subagent, tests enabled, final execution CoVe/self-check enabled.",
+      "phase": "start",
+      "files": [
+        {
+          "path": "adhoc-sdlc/plan-2026-06-27-markpad-global-toolbar-settings-and-resizable-settings.md",
+          "change": "edit"
+        }
+      ]
+    },
+    {
+      "ts": "2026-06-27T14:10:09+02:00",
+      "note": "Inspected SettingsStore, Settings.svelte, TitleBar.svelte, editor toolbar helper and existing source-check tests. Confirmed editor toolbar configuration is separate and TitleBar still uses hard-coded inlineIds.",
+      "phase": "inspection",
+      "files": [
+        {
+          "path": "src/lib/stores/settings.svelte.ts",
+          "change": "edit"
+        },
+        {
+          "path": "src/lib/components/Settings.svelte",
+          "change": "edit"
+        },
+        {
+          "path": "src/lib/components/TitleBar.svelte",
+          "change": "edit"
+        },
+        {
+          "path": "src/lib/utils/editorToolbar.ts",
+          "change": "edit"
+        },
+        {
+          "path": "scripts/toolbarCustomizationWiring.test.ts",
+          "change": "edit"
+        }
+      ]
+    },
+    {
+      "ts": "2026-06-27T14:11:22+02:00",
+      "note": "Added a separate titlebar toolbar configuration helper and persisted titlebar toolbar order, hidden ids, and bar/menu placement in SettingsStore.",
+      "phase": "implementation",
+      "files": [
+        {
+          "path": "src/lib/utils/titlebarToolbar.ts",
+          "change": "edit"
+        },
+        {
+          "path": "src/lib/stores/settings.svelte.ts",
+          "change": "edit"
+        }
+      ]
+    },
+    {
+      "ts": "2026-06-27T14:12:01+02:00",
+      "note": "Wired TitleBar.svelte to the new titlebar toolbar configuration. Contextual availability remains first, then settings split actions into the title bar and more menu.",
+      "phase": "implementation",
+      "files": [
+        {
+          "path": "src/lib/components/TitleBar.svelte",
+          "change": "edit"
+        },
+        {
+          "path": "src/lib/utils/titlebarToolbar.ts",
+          "change": "edit"
+        },
+        {
+          "path": "src/lib/stores/settings.svelte.ts",
+          "change": "edit"
+        }
+      ]
+    },
+    {
+      "ts": "2026-06-27T14:14:37+02:00",
+      "note": "Separated toolbar settings into a dedicated Settings category with independent application-toolbar and editor-toolbar sections, added application toolbar placement controls, and made the Settings modal resizable with min/max constraints.",
+      "phase": "implementation",
+      "files": [
+        {
+          "path": "src/lib/components/Settings.svelte",
+          "change": "edit"
+        },
+        {
+          "path": "src/lib/utils/i18n.ts",
+          "change": "edit"
+        }
+      ]
+    },
+    {
+      "ts": "2026-06-27T14:15:23+02:00",
+      "note": "Added focused tests for titlebar toolbar normalization/splitting/reorder and updated source checks for separated toolbar settings, TitleBar wiring, and Settings resize.",
+      "phase": "tests",
+      "files": [
+        {
+          "path": "scripts/titlebarToolbar.test.ts",
+          "change": "edit"
+        },
+        {
+          "path": "scripts/toolbarCustomizationWiring.test.ts",
+          "change": "edit"
+        }
+      ]
+    }
+  ],
+  "decisions": [
+    {
+      "ts": "2026-06-27T14:20:13+02:00",
+      "text": "Settings action in the titlebar toolbar is movable between bar and more menu but not hideable, to prevent users from locking themselves out of toolbar configuration."
+    }
+  ],
+  "verification": [
+    {
+      "ts": "2026-06-27T14:19:41+02:00",
+      "command": "npx tsx --test scripts/*.test.ts",
+      "outcome": "PASS: npx tsx --test scripts/*.test.ts completed with 52 passing tests."
+    },
+    {
+      "ts": "2026-06-27T14:19:45+02:00",
+      "command": "npm run check",
+      "outcome": "PASS: npm run check completed with 0 errors. It still reports existing Svelte accessibility/CSS warnings in Settings.svelte, TitleBar.svelte and ZoomOverlay.svelte."
+    },
+    {
+      "ts": "2026-06-27T14:19:50+02:00",
+      "command": "npm run build",
+      "outcome": "PASS: npm run build completed successfully. Vite emitted non-fatal existing warnings about a11y, dynamic imports, chunk size and unused initVimMode import."
+    },
+    {
+      "ts": "2026-06-27T14:19:55+02:00",
+      "command": "cargo test; OPENSSL_DIR=/usr cargo test; command -v pkg-config; dpkg -s libssl-dev",
+      "outcome": "BLOCKED: cargo test did not reach project tests because the WSL environment lacks pkg-config. libssl-dev is installed, but pkg-config/pkgconf is missing; OPENSSL_DIR=/usr still fails and fontconfig also requires pkg-config."
+    }
+  ],
+  "final_result": "Implemented separate global titlebar toolbar settings alongside the existing editor toolbar settings. Added titlebar action catalog, persistence, TitleBar wiring, Settings UI separation, Settings resize, i18n labels, and focused tests. Frontend tests/check/build pass; cargo test is blocked by missing pkg-config in the WSL environment."
+}

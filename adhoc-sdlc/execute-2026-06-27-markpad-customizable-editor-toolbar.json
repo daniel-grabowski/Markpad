@@ -1,0 +1,97 @@
+{
+  "type": "execute",
+  "name": "markpad-customizable-editor-toolbar",
+  "title": "Markpad editor toolbar customization",
+  "project": "",
+  "keywords": [],
+  "original_prompt": "Aplikacje ma taki mały toolbar, ale kolejność tych przycisków na toolbarze nie jest właściwa. Chcę włączać/wyłączać pozycje na toolbarze, zmieniać ich układ, najlepiej drag'n'drop jak w menu zakładek. Z popup menu toolbaru/kebaba ma zniknąć opcja otwórz lokalizację, bo jest już w prawokliku zakładki.",
+  "created": "2026-06-27T13:22:47+02:00",
+  "updated": "2026-06-27T13:32:05+02:00",
+  "status": "done",
+  "plan": "/home/dgrabowski/projects/Markpad/adhoc-sdlc/plan-2026-06-27-markpad-customizable-editor-toolbar.md",
+  "entries": [
+    {
+      "ts": "2026-06-27T13:22:47+02:00",
+      "note": "Started execution from the saved plan. Scope: configurable editor toolbar visibility/order with DnD settings UI, plus removing Open file location from the top toolbar/kebab overflow only.",
+      "phase": "start",
+      "files": [
+        {
+          "path": "adhoc-sdlc/plan-2026-06-27-markpad-customizable-editor-toolbar.md",
+          "change": "edit"
+        }
+      ]
+    },
+    {
+      "ts": "2026-06-27T13:23:52+02:00",
+      "note": "Added failing tests for toolbar configuration helpers and UI wiring. The targeted run fails because editorToolbar utility is missing, EditorToolbar is not configured from settings, Settings has no DnD toolbar controls, and TitleBar still pushes open_loc into the top toolbar list.",
+      "phase": "test-red",
+      "files": [
+        {
+          "path": "scripts/editorToolbar.test.ts",
+          "change": "edit"
+        },
+        {
+          "path": "scripts/toolbarCustomizationWiring.test.ts",
+          "change": "edit"
+        }
+      ]
+    },
+    {
+      "ts": "2026-06-27T13:27:28+02:00",
+      "note": "Implemented toolbar definition helpers, settings persistence for order/hidden ids, configurable EditorToolbar rendering, a draggable toolbar settings list with Up/Down fallback, and removed open_loc from the top TitleBar action list. Targeted tests now pass.",
+      "phase": "implementation",
+      "files": [
+        {
+          "path": "src/lib/utils/editorToolbar.ts",
+          "change": "edit"
+        },
+        {
+          "path": "src/lib/stores/settings.svelte.ts",
+          "change": "edit"
+        },
+        {
+          "path": "src/lib/components/EditorToolbar.svelte",
+          "change": "edit"
+        },
+        {
+          "path": "src/lib/MarkdownViewer.svelte",
+          "change": "edit"
+        },
+        {
+          "path": "src/lib/components/Settings.svelte",
+          "change": "edit"
+        },
+        {
+          "path": "src/lib/components/TitleBar.svelte",
+          "change": "edit"
+        },
+        {
+          "path": "src/lib/utils/i18n.ts",
+          "change": "edit"
+        },
+        {
+          "path": "scripts/editorToolbar.test.ts",
+          "change": "edit"
+        },
+        {
+          "path": "scripts/toolbarCustomizationWiring.test.ts",
+          "change": "edit"
+        }
+      ]
+    }
+  ],
+  "decisions": [],
+  "verification": [
+    {
+      "ts": "2026-06-27T13:28:04+02:00",
+      "command": "npx tsx --test scripts/*.test.ts; npm run check",
+      "outcome": "PASS: npx tsx --test scripts/*.test.ts returned 44/44 passing. PASS: npm run check returned 0 errors and 14 existing warnings in Settings.svelte, TitleBar.svelte, and ZoomOverlay.svelte."
+    },
+    {
+      "ts": "2026-06-27T13:31:57+02:00",
+      "command": "npm run tauri build -- --runner cargo-xwin --target x86_64-pc-windows-msvc --no-bundle; install -m 0755 src-tauri/target/x86_64-pc-windows-msvc/release/Markpad.exe release/windows/Markpad_2.6.11_x64.exe; sha256sum Markpad_2.6.11_x64.exe > release/windows/SHA256SUMS.txt; git diff --check",
+      "outcome": "PASS: npm run tauri build -- --runner cargo-xwin --target x86_64-pc-windows-msvc --no-bundle built src-tauri/target/x86_64-pc-windows-msvc/release/Markpad.exe. Copied it to release/windows/Markpad_2.6.11_x64.exe and refreshed SHA256SUMS.txt to 6bc8be3f1f627ead3a91ca925677b9fe73098853787832373072dc2f06852b17. PASS: git diff --check returned clean."
+    }
+  ],
+  "final_result": "Implemented configurable editor toolbar order/visibility with settings persistence, DnD reorder in Settings > Editor, Up/Down fallback controls, reset, configured EditorToolbar rendering, and removed Open file location from the top toolbar/kebab action list while leaving other file-location entry points intact. Refreshed Windows standalone executable and SHA256SUMS."
+}
