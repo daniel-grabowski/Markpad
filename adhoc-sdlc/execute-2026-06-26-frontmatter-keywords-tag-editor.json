@@ -1,0 +1,99 @@
+{
+  "type": "execute",
+  "name": "frontmatter-keywords-tag-editor",
+  "title": "Markpad: edytowalne tagi keywords i ciaśniejszy front matter",
+  "project": "",
+  "keywords": [],
+  "original_prompt": "testuję to na tym pliku: C:\\dFLEX\\trunk\\adhoc-sdlc\\plan-2026-06-26-dflex-logger-onoff-dir-synlog.md\n\nwe frontmatter jest pole `keywords` - Chcę, żeby to było, żeby to były edytowalne tagi. Czyli takie, że mogę usunąć tak przez kliknięcie w krzyżyk nacisnąć i go wyedytować lub dodać nowy. Etykiety i inputy W formularzu frontmatera, Mają zadaleko są odsunięte od siebie, powinny po prostu być. Mieć taką jakby margines, import od etykiety. Tak samo jak etykieta ma od lewej krawędzi.",
+  "created": "2026-06-26T20:43:37+02:00",
+  "updated": "2026-06-26T21:00:51+02:00",
+  "status": "done",
+  "plan": "/home/dgrabowski/projects/Markpad/adhoc-sdlc/plan-2026-06-26-frontmatter-keywords-tag-editor.md",
+  "entries": [
+    {
+      "ts": "2026-06-26T20:43:37+02:00",
+      "note": "Rozpoczeto wykonanie: tag editor dla list frontmatter, korekta layoutu formularza i odswiezenie Windows portable release.",
+      "phase": "start",
+      "files": [
+        {
+          "path": "adhoc-sdlc/plan-2026-06-26-frontmatter-keywords-tag-editor.md",
+          "change": "edit"
+        }
+      ]
+    },
+    {
+      "ts": "2026-06-26T20:45:33+02:00",
+      "note": "Dodano testy i helpery list/tagow frontmatter; potwierdzono RED na brakujacych eksportach, potem GREEN dla scripts/frontMatter.test.ts.",
+      "phase": "tdd",
+      "files": [
+        {
+          "path": "scripts/frontMatter.test.ts",
+          "change": "edit"
+        },
+        {
+          "path": "src/lib/utils/frontMatter.ts",
+          "change": "edit"
+        }
+      ]
+    },
+    {
+      "ts": "2026-06-26T20:48:16+02:00",
+      "note": "Zmieniono pola listowe frontmatter w MarkdownViewer na tag editor z chipami, usuwaniem, inline edycja i inputem dodawania; skorygowano grid formularza i style tagow.",
+      "phase": "implementation",
+      "files": [
+        {
+          "path": "src/lib/MarkdownViewer.svelte",
+          "change": "edit"
+        },
+        {
+          "path": "src/styles.css",
+          "change": "edit"
+        }
+      ]
+    },
+    {
+      "ts": "2026-06-26T21:00:18+02:00",
+      "note": "Doprecyzowano semantyke edycji taga: pusty tekst i duplikat nie usuwaja wartosci; usuwanie pozostaje osobna akcja przez przycisk x.",
+      "phase": "implementation",
+      "files": [
+        {
+          "path": "src/lib/utils/frontMatter.ts",
+          "change": "edit"
+        },
+        {
+          "path": "scripts/frontMatter.test.ts",
+          "change": "edit"
+        }
+      ]
+    }
+  ],
+  "decisions": [],
+  "verification": [
+    {
+      "ts": "2026-06-26T20:54:51+02:00",
+      "command": "npx -y tsx --test scripts/*.test.ts",
+      "outcome": "PASS: 25 testow skryptowych przeszlo po dodaniu helperow frontmatter i testu statycznego tag editora."
+    },
+    {
+      "ts": "2026-06-26T20:54:56+02:00",
+      "command": "npm run check",
+      "outcome": "PASS: svelte-check zakonczyl sie z 0 errors; pozostaly istniejace ostrzezenia w Settings/TitleBar/ZoomOverlay."
+    },
+    {
+      "ts": "2026-06-26T20:55:01+02:00",
+      "command": "npm run build",
+      "outcome": "PASS: produkcyjny frontend build przeszedl; ostrzezenia byly istniejace, bez bledow."
+    },
+    {
+      "ts": "2026-06-26T20:55:06+02:00",
+      "command": "npm run tauri build -- --runner cargo-xwin --target x86_64-pc-windows-msvc --no-bundle --ci && sha256sum -c SHA256SUMS.txt",
+      "outcome": "PASS: Windows x64 Tauri release zbudowany przez cargo-xwin, skopiowany do release/windows/Markpad_2.6.11_x64.exe; SHA256SUMS sprawdzony OK."
+    },
+    {
+      "ts": "2026-06-26T21:00:27+02:00",
+      "command": "npm run tauri build -- --runner cargo-xwin --target x86_64-pc-windows-msvc --no-bundle --ci; sha256sum -c SHA256SUMS.txt",
+      "outcome": "PASS: po finalnej korekcie ponownie zbudowano Windows x64 release; artefakt release/windows/Markpad_2.6.11_x64.exe ma SHA256 92fc6e806f985679657296f75cd671a46a67fc9063cd87598bb289a4cb1294a0 i sha256sum -c zwraca OK."
+    }
+  ],
+  "final_result": "Zaimplementowano tag editor dla pol listowych frontmatter, w tym keywords: dodawanie, usuwanie, inline edycja, ignorowanie pustych i duplikatowych edycji oraz ciaśniejszy layout formularza. Zweryfikowano testy, svelte-check, build frontendowy w ramach Tauri i Windows x64 portable release."
+}

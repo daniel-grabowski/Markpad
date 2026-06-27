@@ -1,0 +1,64 @@
+{
+  "type": "execute",
+  "name": "frontmatter-collapse-expand-regression",
+  "title": "Markpad: naprawa rozwijania zwiniętego front matter",
+  "project": "",
+  "keywords": [],
+  "original_prompt": "$adhoc-sdlc plan i exec\njest błąd z renderowaniem frontmatter; po zwinięci nie da się rozwinąć.",
+  "created": "2026-06-26T20:15:26+02:00",
+  "updated": "2026-06-26T20:20:37+02:00",
+  "status": "done",
+  "plan": "/home/dgrabowski/projects/Markpad/adhoc-sdlc/plan-2026-06-26-frontmatter-collapse-expand-regression.md",
+  "entries": [
+    {
+      "ts": "2026-06-26T20:15:26+02:00",
+      "note": "Started execution. Scope: reproduce frontmatter collapse/expand regression, add a focused regression test, apply minimal Svelte/helper fix, then verify with TS tests and Svelte checks.",
+      "phase": "start",
+      "files": [
+        {
+          "path": "adhoc-sdlc/plan-2026-06-26-frontmatter-collapse-expand-regression.md",
+          "change": "edit"
+        }
+      ]
+    },
+    {
+      "ts": "2026-06-26T20:17:13+02:00",
+      "note": "Added regression test for the front matter disclosure structure and confirmed RED: current code still uses section plus button instead of native details/summary.",
+      "phase": "red",
+      "files": [
+        {
+          "path": "scripts/frontMatterDisclosure.test.ts",
+          "change": "add"
+        }
+      ]
+    },
+    {
+      "ts": "2026-06-26T20:18:22+02:00",
+      "note": "Replaced custom front matter section/button disclosure with native details/summary, kept per-file collapsed state synchronized from the details open state, and adjusted CSS marker/chevron handling. Regression test now passes.",
+      "phase": "implementation",
+      "files": [
+        {
+          "path": "src/lib/MarkdownViewer.svelte",
+          "change": "edit"
+        },
+        {
+          "path": "src/styles.css",
+          "change": "edit"
+        },
+        {
+          "path": "scripts/frontMatterDisclosure.test.ts",
+          "change": "edit"
+        }
+      ]
+    }
+  ],
+  "decisions": [],
+  "verification": [
+    {
+      "ts": "2026-06-26T20:20:25+02:00",
+      "command": "npx -y tsx --test scripts/*.test.ts && npm run check && npm run build",
+      "outcome": "npx -y tsx --test scripts/frontMatterDisclosure.test.ts: RED before implementation, GREEN after native details/summary change. npx -y tsx --test scripts/*.test.ts: 21 tests passed, 0 failed. npm run check: 0 errors, 14 existing warnings. npm run build: exit 0, existing warnings only. Browser dev-server smoke could not exercise the app because running outside Tauri fails on missing window.__TAURI__.invoke."
+    }
+  ],
+  "final_result": "Fixed the front matter collapse/expand regression by replacing the custom section/button disclosure with native details/summary, preserving per-file collapsed state and existing properties editing. Added a regression test and verified with TS tests, svelte-check, and frontend build."
+}

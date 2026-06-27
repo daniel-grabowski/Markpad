@@ -1,0 +1,97 @@
+{
+  "type": "execute",
+  "name": "open-file-bring-to-front-frontmatter-block",
+  "title": "Markpad: bring-to-front przy otwieraniu plikow i blok front matter",
+  "project": "",
+  "keywords": [],
+  "original_prompt": "Problem 1: kiedy Markpad laduje plik przez skojarzenie .md / dwuklik, aplikacja ma zawsze pokazac okno i przeniesc je na pierwszy plan, takze gdy jest zwinieta lub ukryta. Problem 2: YAML front matter na poczatku planow ma nie renderowac sie jako sciana naglowkow; ma byc renderowany jak blok metadanych w stylu Obsidian, z eleganckim podgladem, edycja i zwijaniem do jednej linii.",
+  "created": "2026-06-26T19:42:15+02:00",
+  "updated": "2026-06-26T19:55:53+02:00",
+  "status": "done",
+  "plan": "/home/dgrabowski/projects/Markpad/adhoc-sdlc/plan-2026-06-26-open-file-bring-to-front-frontmatter-block.md",
+  "entries": [
+    {
+      "ts": "2026-06-26T19:45:00+02:00",
+      "note": "Dodano test RED/GREEN i moduł logiki YAML front matter: wykrywanie bloku, stripping body, pola UI i aktualizacja wartości.",
+      "phase": "frontmatter-logic",
+      "files": [
+        {
+          "path": "scripts/frontMatter.test.ts",
+          "change": "edit"
+        },
+        {
+          "path": "src/lib/utils/frontMatter.ts",
+          "change": "edit"
+        },
+        {
+          "path": "package.json",
+          "change": "edit"
+        },
+        {
+          "path": "package-lock.json",
+          "change": "edit"
+        }
+      ]
+    },
+    {
+      "ts": "2026-06-26T19:49:38+02:00",
+      "note": "Dodano helper bring-to-front w Tauri: show, unminimize i set_focus są używane przez show_window, single-instance, startup z argumentem pliku i macOS Opened.",
+      "phase": "tauri-focus",
+      "files": [
+        {
+          "path": "src-tauri/src/lib.rs",
+          "change": "edit"
+        }
+      ]
+    },
+    {
+      "ts": "2026-06-26T19:51:59+02:00",
+      "note": "Podpięto panel front matter do MarkdownViewer: render preview stripuje front matter przed render_markdown, panel pokazuje properties, obsługuje zwijanie i edycję top-level pól.",
+      "phase": "frontmatter-ui",
+      "files": [
+        {
+          "path": "src/lib/MarkdownViewer.svelte",
+          "change": "edit"
+        },
+        {
+          "path": "src/styles.css",
+          "change": "edit"
+        }
+      ]
+    }
+  ],
+  "decisions": [],
+  "verification": [
+    {
+      "ts": "2026-06-26T19:49:38+02:00",
+      "command": "npm run check",
+      "outcome": "npm run check: exit 0, svelte-check found 0 errors and 14 pre-existing warnings outside the changed front matter panel."
+    },
+    {
+      "ts": "2026-06-26T19:49:39+02:00",
+      "command": "cd src-tauri && cargo check",
+      "outcome": "cd src-tauri && cargo check blocked by environment before app compilation: pkg-config/OpenSSL not installed for openssl-sys."
+    },
+    {
+      "ts": "2026-06-26T19:53:47+02:00",
+      "command": "npx -y tsx --test scripts/*.test.ts",
+      "outcome": "npx -y tsx --test scripts/*.test.ts: 20 tests passed, 0 failed."
+    },
+    {
+      "ts": "2026-06-26T19:53:47+02:00",
+      "command": "npm run check",
+      "outcome": "npm run check: exit 0, svelte-check found 0 errors and 14 existing warnings in Settings/TitleBar/ZoomOverlay."
+    },
+    {
+      "ts": "2026-06-26T19:53:47+02:00",
+      "command": "npm run build",
+      "outcome": "npm run build: exit 0; Vite/SvelteKit production build completed and wrote static site to build/. Warnings were existing a11y/chunk-size/import warnings."
+    },
+    {
+      "ts": "2026-06-26T19:55:46+02:00",
+      "command": "",
+      "outcome": "Execution CoVe: final diff/status match requested scope: Tauri focus helper for associated-file opens, frontMatter parser/tests, MarkdownViewer front matter panel/render path, CSS, and yaml dependency. Verified with npx -y tsx --test scripts/*.test.ts, npm run check, and npm run build. Rust cargo check and GUI smoke were not completed because the local Tauri/Rust dependency build is blocked by missing pkg-config/OpenSSL for openssl-sys. Dirty worktree also contains unrelated release artifacts and Ctrl+T adhoc files left untouched."
+    }
+  ],
+  "final_result": "Implemented bring-to-front handling for associated-file opens and an Obsidian-like front matter properties panel with parsing, editing, collapse state, styling, and focused tests. Frontend verification passed. Rust compile/runtime smoke remains blocked in this environment by missing pkg-config/OpenSSL for openssl-sys."
+}

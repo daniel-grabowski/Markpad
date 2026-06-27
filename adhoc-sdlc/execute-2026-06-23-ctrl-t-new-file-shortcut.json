@@ -1,0 +1,54 @@
+{
+  "type": "execute",
+  "name": "ctrl-t-new-file-shortcut",
+  "title": "Fix Ctrl+T New File Shortcut",
+  "project": "",
+  "keywords": [],
+  "created": "2026-06-23T18:21:11+02:00",
+  "updated": "2026-06-23T18:24:09+02:00",
+  "status": "done",
+  "plan": "/home/dgrabowski/projects/Markpad/adhoc-sdlc/plan-2026-06-23-ctrl-t-new-file-shortcut.md",
+  "entries": [
+    {
+      "ts": "2026-06-23T18:21:29+02:00",
+      "note": "Zmieniono obsluge Ctrl/Cmd+T w keydown: zamiast addHomeTab wywolywane jest handleNewFile, czyli ta sama akcja co New File.",
+      "phase": "implementation",
+      "files": [
+        {
+          "path": "src/lib/MarkdownViewer.svelte",
+          "change": "edit"
+        }
+      ]
+    },
+    {
+      "ts": "2026-06-23T18:21:46+02:00",
+      "note": "Potwierdzono, ze Ctrl/Cmd+Shift+T nadal obsluguje handleUndoCloseTab, a native menu-file-new nadal wskazuje handleNewFile.",
+      "phase": "self-check",
+      "files": [
+        {
+          "path": "src/lib/MarkdownViewer.svelte",
+          "change": "edit"
+        }
+      ]
+    }
+  ],
+  "decisions": [],
+  "verification": [
+    {
+      "ts": "2026-06-23T18:22:11+02:00",
+      "command": "npm run check",
+      "outcome": "npm run check zakonczyl sie kodem 0; svelte-check zglosil 0 errors i 14 istniejacych warnings w Settings.svelte, TitleBar.svelte oraz ZoomOverlay.svelte."
+    },
+    {
+      "ts": "2026-06-23T18:23:52+02:00",
+      "command": "npm run build",
+      "outcome": "npm run build zakonczyl sie kodem 0; zostaly tylko istniejace ostrzezenia Svelte a11y, dynamic import/chunk-size warnings."
+    },
+    {
+      "ts": "2026-06-23T18:24:00+02:00",
+      "command": "git diff --stat && rg -n 'addHomeTab|handleNewFile|handleUndoCloseTab|menu-file-new' src/lib/MarkdownViewer.svelte",
+      "outcome": "Finalny self-check: diff produkcyjny to jedna linia w MarkdownViewer.svelte; Ctrl/Cmd+T wywoluje handleNewFile, Ctrl/Cmd+Shift+T zostaje przy handleUndoCloseTab, menu-file-new nadal uzywa handleNewFile. Brak zmian w logice zapisu, Rust menu i TabManager."
+    }
+  ],
+  "final_result": "Naprawiono root cause: skrot Ctrl/Cmd+T w JS keydown tworzyl zakladke HOME przez addHomeTab; teraz wywoluje handleNewFile, czyli ta sama akcje co New File/menu. Typecheck i build przeszly z kodem 0."
+}

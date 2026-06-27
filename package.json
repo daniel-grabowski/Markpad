@@ -28,7 +28,8 @@
 		"mermaid": "^11.12.2",
 		"monaco-editor": "^0.55.1",
 		"monaco-vim": "^0.4.4",
-		"node-stream-zip": "^1.15.0"
+		"node-stream-zip": "^1.15.0",
+		"yaml": "^2.9.0"
 	},
 	"devDependencies": {
 		"@sveltejs/adapter-static": "^3.0.6",
