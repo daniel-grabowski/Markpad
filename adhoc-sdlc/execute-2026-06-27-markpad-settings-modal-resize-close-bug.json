@@ -1,0 +1,86 @@
+{
+  "type": "execute",
+  "name": "markpad-settings-modal-resize-close-bug",
+  "title": "Markpad: fix settings modal resize and accidental close",
+  "project": "",
+  "keywords": [],
+  "original_prompt": "$adhoc-sdlc plan i exec\nOkienku ustawień. Generalnie jakoś dziwnie się rozszerza tak jak ja bym ciągnął w jakąś tam stronę lewy czy dolny róg tak to to się rozszerza jako całość dziwnie to wygląda. Poza tym jak puszczę mysz to znika. Okno ustawień znika.",
+  "created": "2026-06-27T15:22:51+02:00",
+  "updated": "2026-06-27T15:39:29+02:00",
+  "status": "done",
+  "plan": "/home/dgrabowski/projects/Markpad/adhoc-sdlc/plan-2026-06-27-markpad-settings-modal-resize-close-bug.md",
+  "entries": [
+    {
+      "ts": "2026-06-27T15:22:51+02:00",
+      "note": "Started execution. Root cause: native CSS resize on a flex-centered modal makes resizing look centered, and the post-resize click can reach the backdrop close handler.",
+      "phase": "start",
+      "files": [
+        {
+          "path": "adhoc-sdlc/plan-2026-06-27-markpad-settings-modal-resize-close-bug.md",
+          "change": "edit"
+        }
+      ]
+    },
+    {
+      "ts": "2026-06-27T15:23:27+02:00",
+      "note": "Added a regression test for settings modal resize. RED verified: scripts/toolbarCustomizationWiring.test.ts fails because the component still uses native resize and lacks the dedicated resize handle/backdrop guard.",
+      "phase": "test-red",
+      "files": [
+        {
+          "path": "scripts/toolbarCustomizationWiring.test.ts",
+          "change": "edit"
+        }
+      ]
+    },
+    {
+      "ts": "2026-06-27T15:25:01+02:00",
+      "note": "Replaced native CSS resize with a dedicated bottom-right pointer resize handle. The modal freezes its top-left position during resize and ignores the synthetic backdrop click after pointer release.",
+      "phase": "implementation",
+      "files": [
+        {
+          "path": "src/lib/components/Settings.svelte",
+          "change": "edit"
+        },
+        {
+          "path": "scripts/toolbarCustomizationWiring.test.ts",
+          "change": "edit"
+        }
+      ]
+    },
+    {
+      "ts": "2026-06-27T15:32:44+02:00",
+      "note": "Cleaned up the settings modal markup indentation after the CoVe diff pass; behavior unchanged, but final builds must be repeated after this source edit.",
+      "phase": "cleanup",
+      "files": [
+        {
+          "path": "src/lib/components/Settings.svelte",
+          "change": "edit"
+        }
+      ]
+    }
+  ],
+  "decisions": [],
+  "verification": [
+    {
+      "ts": "2026-06-27T15:25:46+02:00",
+      "command": "npm run check; npx tsx --test scripts/*.test.ts",
+      "outcome": "PASS: npm run check completed with 0 errors and 0 warnings. PASS: npx tsx --test scripts/*.test.ts completed with 52 passing tests."
+    },
+    {
+      "ts": "2026-06-27T15:27:38+02:00",
+      "command": "npm run build; rg -n 'warning|Warning|WARN|error:' /tmp/markpad-settings-resize-frontend-build.log; git diff --check",
+      "outcome": "PASS: npm run build completed with exit code 0. Log scan found no warning/Warning/WARN/error: entries. PASS: git diff --check reported no whitespace errors."
+    },
+    {
+      "ts": "2026-06-27T15:31:38+02:00",
+      "command": "npm run tauri build -- --runner cargo-xwin --target x86_64-pc-windows-msvc --no-bundle --ci; sha256sum -c SHA256SUMS.txt; file release/windows/Markpad_2.6.11_x64.exe",
+      "outcome": "PASS: Windows x64 cargo-xwin release build completed with exit code 0. Log scan found no warning/Warning/WARN/error: entries. PASS: refreshed release/windows/Markpad_2.6.11_x64.exe; SHA256SUMS.txt validates and file reports PE32+ executable GUI x86-64 for MS Windows."
+    },
+    {
+      "ts": "2026-06-27T15:39:23+02:00",
+      "command": "npm run check; npx tsx --test scripts/*.test.ts; npm run build; npm run tauri build -- --runner cargo-xwin --target x86_64-pc-windows-msvc --no-bundle --ci; sha256sum -c SHA256SUMS.txt",
+      "outcome": "PASS: final npm run check completed with 0 errors and 0 warnings. PASS: final npx tsx --test scripts/*.test.ts completed with 52 passing tests. PASS: final npm run build completed with exit code 0 and no warning/Warning/WARN/error: entries in its log. PASS: final Windows x64 cargo-xwin build completed with exit code 0 and no warning/Warning/WARN/error: entries in its log. PASS: release/windows/Markpad_2.6.11_x64.exe checksum validates; SHA256 0fbce9985c126a22ce1e0afab1c4d9100057d1e1a61d838c7f4f72f117c832a3."
+    }
+  ],
+  "final_result": "Done. Settings modal now uses a dedicated bottom-right resize handle instead of native CSS resize, keeps the modal top-left anchored during resize, and guards the backdrop close handler from the post-resize click. Windows portable release artifact refreshed at release/windows/Markpad_2.6.11_x64.exe."
+}

@@ -1,0 +1,83 @@
+{
+  "type": "execute",
+  "name": "preview-editor-scroll-sync",
+  "title": "Markpad: synchronize preview scroll back to editor",
+  "project": "",
+  "keywords": [],
+  "original_prompt": "$adhoc-sdlc\nZnalazłem takiego baga śmiesznego do synchronicznego synchronizowane tego skrotu przewijania 2 okien, czyli okna te. Owego i i podglądu mianowicie jeżeli s kroluje okno tekstowe to działa to dobrze, ale jak skontroluję okno podglądu to okno tekstu nie jest synchronizowane.",
+  "created": "2026-06-27T17:52:02+02:00",
+  "updated": "2026-06-27T18:00:07+02:00",
+  "status": "done",
+  "plan": "/home/dgrabowski/projects/Markpad/adhoc-sdlc/plan-2026-06-27-preview-editor-scroll-sync.md",
+  "entries": [
+    {
+      "ts": "2026-06-27T17:52:02+02:00",
+      "note": "Start wykonania: potwierdzony błąd asymetrii scroll sync; root-cause w kruchym wyborze preview anchor na podstawie top-level data-sourcepos.",
+      "phase": "start",
+      "files": [
+        {
+          "path": "adhoc-sdlc/plan-2026-06-27-preview-editor-scroll-sync.md",
+          "change": "edit"
+        },
+        {
+          "path": "src/lib/MarkdownViewer.svelte",
+          "change": "edit"
+        },
+        {
+          "path": "scripts/reloadOpenToolbar.test.ts",
+          "change": "edit"
+        }
+      ]
+    },
+    {
+      "ts": "2026-06-27T17:52:40+02:00",
+      "note": "RED: dodany test previewScrollSync wymaga helpera kotwicy preview scrolla i oblał obecny kod na braku PreviewScrollAnchor oraz getPreviewScrollAnchor.",
+      "phase": "red-tests",
+      "files": [
+        {
+          "path": "scripts/previewScrollSync.test.ts",
+          "change": "edit"
+        }
+      ]
+    },
+    {
+      "ts": "2026-06-27T17:53:32+02:00",
+      "note": "GREEN: dodany PreviewScrollAnchor i getPreviewScrollAnchor; preview scroll wybiera aktywny albo najbliższy element z data-sourcepos, a syncEditorToPreviewScroll oraz handleScroll korzystają z tego samego helpera.",
+      "phase": "implementation",
+      "files": [
+        {
+          "path": "src/lib/MarkdownViewer.svelte",
+          "change": "edit"
+        },
+        {
+          "path": "scripts/previewScrollSync.test.ts",
+          "change": "edit"
+        }
+      ]
+    }
+  ],
+  "decisions": [],
+  "verification": [
+    {
+      "ts": "2026-06-27T17:53:53+02:00",
+      "command": "npx tsx --test scripts/previewScrollSync.test.ts && npx tsx --test scripts/*.test.ts && npm run check",
+      "outcome": "Targeted test passed: npx tsx --test scripts/previewScrollSync.test.ts -> 1/1; full script suite passed: npx tsx --test scripts/*.test.ts -> 57/57; npm run check -> 0 errors, 0 warnings."
+    },
+    {
+      "ts": "2026-06-27T17:55:28+02:00",
+      "command": "npm run build && rg -n 'warning|Warning|WARN|error:|Error:' /tmp/markpad-npm-build.log",
+      "outcome": "npm run build passed; /tmp/markpad-npm-build.log scan found no warning/error matches."
+    },
+    {
+      "ts": "2026-06-27T17:59:55+02:00",
+      "command": "npm run tauri build -- --runner cargo-xwin --target x86_64-pc-windows-msvc --no-bundle --ci && sha256sum -c release/windows/SHA256SUMS.txt",
+      "outcome": "Windows build passed: npm run tauri build -- --runner cargo-xwin --target x86_64-pc-windows-msvc --no-bundle --ci exited 0; /tmp/markpad-windows-build.log scan found no warning/error matches; release/windows/Markpad_2.6.11_x64.exe checksum verified."
+    },
+    {
+      "ts": "2026-06-27T18:00:01+02:00",
+      "command": "npx tsx --test scripts/*.test.ts && npm run check && sha256sum -c release/windows/SHA256SUMS.txt && git diff --check",
+      "outcome": "Final gate passed: fresh npx tsx --test scripts/*.test.ts -> 57/57; npm run check -> 0 errors, 0 warnings; sha256sum -c -> OK; git diff --check -> clean; build log scans -> no warning/error matches."
+    }
+  ],
+  "final_result": "Done: preview-to-editor scroll sync now uses a resilient source-position anchor helper, regression coverage was added, and the Windows portable release artifact was rebuilt."
+}

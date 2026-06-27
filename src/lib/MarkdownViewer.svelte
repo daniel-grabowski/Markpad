@@ -1098,34 +1098,57 @@ import { t } from './utils/i18n.js';
 		}
 	}
 
+	type PreviewScrollAnchor = {
+		line: number;
+		ratio: number;
+	};
+
+	function parseSourceposLineRange(sourcepos: string | undefined) {
+		if (!sourcepos) return null;
+		const [start, end] = sourcepos.split('-');
+		const startLine = parseInt(start?.split(':')[0] ?? '', 10);
+		const endLine = parseInt(end?.split(':')[0] ?? '', 10);
+
+		if (Number.isNaN(startLine) || Number.isNaN(endLine)) return null;
+		return { startLine, endLine };
+	}
+
+	function getPreviewScrollAnchor(target: HTMLElement): PreviewScrollAnchor | null {
+		const anchorOffset = target.scrollTop + 60;
+		const viewportRatio = target.clientHeight > 0 ? Math.min(1, 60 / target.clientHeight) : 0;
+		const candidates = Array.from(target.querySelectorAll<HTMLElement>('[data-sourcepos]'));
+
+		let best: { el: HTMLElement; startLine: number; endLine: number; distance: number } | null = null;
+		for (const el of candidates) {
+			const range = parseSourceposLineRange(el.dataset.sourcepos);
+			if (!range) continue;
+
+			const top = el.offsetTop;
+			const bottom = top + el.offsetHeight;
+			const distance = anchorOffset < top ? top - anchorOffset : anchorOffset > bottom ? anchorOffset - bottom : 0;
+
+			if (!best || distance < best.distance) {
+				best = { el, startLine: range.startLine, endLine: range.endLine, distance };
+				if (distance === 0) break;
+			}
+		}
+
+		if (!best) return null;
+
+		const elementHeight = best.el.offsetHeight;
+		const relativeOffset = Math.max(0, Math.min(elementHeight, anchorOffset - best.el.offsetTop));
+		const elementRatio = elementHeight > 0 ? relativeOffset / elementHeight : 0;
+		const totalLines = best.endLine - best.startLine;
+		const line = best.startLine + Math.round(Math.max(0, totalLines) * elementRatio);
+
+		return { line, ratio: viewportRatio };
+	}
+
 	function syncEditorToPreviewScroll(target: HTMLElement) {
 		if (!tabManager.activeTab?.isScrollSynced || !editorPane) return;
 
-		const anchorOffset = target.scrollTop + 60;
-		const viewportRatio = target.clientHeight > 0 ? Math.min(1, 60 / target.clientHeight) : 0;
-		const children = Array.from(markdownBody?.children || []);
-
-		for (const child of children) {
-			const el = child as HTMLElement;
-			if (el.offsetTop <= anchorOffset && el.offsetTop + el.offsetHeight > anchorOffset) {
-				const sourcepos = el.dataset.sourcepos;
-				if (!sourcepos) break;
-
-				const [start, end] = sourcepos.split('-');
-				const startLine = parseInt(start.split(':')[0]);
-				const endLine = parseInt(end.split(':')[0]);
-
-				if (!isNaN(startLine) && !isNaN(endLine)) {
-					const relativeOffset = anchorOffset - el.offsetTop;
-					const elementRatio = el.offsetHeight > 0 ? relativeOffset / el.offsetHeight : 0;
-					const totalLines = endLine - startLine;
-					const estimatedLine = startLine + Math.round(totalLines * elementRatio);
-
-					editorPane.syncScrollToLine(estimatedLine, viewportRatio);
-				}
-				break;
-			}
-		}
+		const anchor = getPreviewScrollAnchor(target);
+		if (anchor) editorPane.syncScrollToLine(anchor.line, anchor.ratio);
 	}
 
 	let isScrolling = $state(false);
@@ -1160,33 +1183,9 @@ import { t } from './utils/i18n.js';
 				tabManager.updateTabScrollPercentage(tabManager.activeTabId, percentage);
 			}
 
-			// Interpolated Anchor Calculation
-			const anchorOffset = target.scrollTop + 60;
-			const children = Array.from(markdownBody?.children || []);
-
-			for (const child of children) {
-				const el = child as HTMLElement;
-				// Check intersection
-				if (el.offsetTop <= anchorOffset && el.offsetTop + el.offsetHeight > anchorOffset) {
-					const sourcepos = el.dataset.sourcepos;
-					if (sourcepos) {
-						const [start, end] = sourcepos.split('-');
-						const startLine = parseInt(start.split(':')[0]);
-						const endLine = parseInt(end.split(':')[0]);
-
-						if (!isNaN(startLine) && !isNaN(endLine)) {
-							// Calculate relative position within element
-							const relativeOffset = anchorOffset - el.offsetTop;
-							const ratio = relativeOffset / el.offsetHeight;
-
-							const totalLines = endLine - startLine;
-							const estimatedLine = startLine + Math.round(totalLines * ratio);
-
-							tabManager.updateTabAnchorLine(tabManager.activeTabId, estimatedLine);
-						}
-					}
-					break;
-				}
+			const anchor = getPreviewScrollAnchor(target);
+			if (anchor) {
+				tabManager.updateTabAnchorLine(tabManager.activeTabId, anchor.line);
 			}
 		}
 
@@ -3262,7 +3261,7 @@ import { t } from './utils/i18n.js';
 									class="toc-resize-handle"
 									class:on-right={settings.tocSide === 'right'}
 									role="separator"
-									aria-label="Resize table of contents"
+									aria-label={t('toc.resizeTableOfContents', settings.language)}
 									aria-orientation="vertical"
 									aria-valuemin={TOC_MIN_WIDTH}
 									aria-valuemax={TOC_MAX_WIDTH}
