@@ -1,0 +1,142 @@
+{
+  "type": "execute",
+  "name": "markpad-pixel-scroll-sync-frontmatter",
+  "title": "Markpad: pixel-based synchronized scrolling with frontmatter",
+  "project": "",
+  "keywords": [],
+  "original_prompt": "Poprawić synchronizowane przewijanie: obecne mapowanie po liniach/sourcepos nie bierze pod uwagę zwiniętego/rozwiniętego frontmatter ani różnych wielkości czcionek między edytorem i renderem. Synchronizacja ma liczyć graficzną pozycję w pikselach.",
+  "created": "2026-06-27T18:06:51+02:00",
+  "updated": "2026-06-28T14:18:15+02:00",
+  "status": "done",
+  "plan": "/home/dgrabowski/projects/Markpad/adhoc-sdlc/plan-2026-06-27-markpad-pixel-scroll-sync-frontmatter.md",
+  "entries": [
+    {
+      "ts": "2026-06-27T18:06:51+02:00",
+      "note": "Started implementation. Root cause: scroll sync still uses line/sourcepos anchors, which ignores frontmatter panel height and editor/preview font/layout differences. Plan is to replace runtime sync with pixel segment mapping while keeping sourcepos anchors only for saved tab position.",
+      "phase": "start",
+      "files": [
+        {
+          "path": "src/lib/MarkdownViewer.svelte",
+          "change": "edit"
+        },
+        {
+          "path": "src/lib/components/Editor.svelte",
+          "change": "edit"
+        },
+        {
+          "path": "scripts/previewScrollSync.test.ts",
+          "change": "edit"
+        }
+      ]
+    },
+    {
+      "ts": "2026-06-27T18:09:50+02:00",
+      "note": "Implemented pixel-segment scroll sync. Editor now emits/applies ScrollSyncPosition {section, ratio}; preview maps the same contract using actual frontmatter panel DOM height. Sourcepos anchor code remains only for saved tab anchor lines. svelte-check passes with 0 errors and 0 warnings.",
+      "phase": "implement",
+      "files": [
+        {
+          "path": "src/lib/MarkdownViewer.svelte",
+          "change": "edit"
+        },
+        {
+          "path": "src/lib/components/Editor.svelte",
+          "change": "edit"
+        },
+        {
+          "path": "scripts/previewScrollSync.test.ts",
+          "change": "edit"
+        }
+      ]
+    },
+    {
+      "ts": "2026-06-27T18:26:00+02:00",
+      "note": "Verification complete: npm run check reports 0 errors/0 warnings; npx -y tsx --test scripts/*.test.ts passes 59/59; git diff --check passes; Windows cargo build succeeds with RUSTFLAGS pointing at local target/mingw-case-libs; cargo test --release --target x86_64-pc-windows-gnu --no-run compiles lib/main test executables. Portable release refreshed at release/windows/Markpad_2.6.11_x64.exe with SHA256 f4fb9ecb773ae447eec1a5cdc4e8d8508bfa24034e6c70b6571fae5315d25950. Native Linux cargo test remains blocked by missing GTK/WebKit system libraries in WSL; tauri bundler created the exe but full bundling exits on missing TAURI_SIGNING_PRIVATE_KEY for updater signing.",
+      "phase": "verify",
+      "files": [
+        {
+          "path": "release/windows/Markpad_2.6.11_x64.exe",
+          "change": "edit"
+        },
+        {
+          "path": "release/windows/SHA256SUMS.txt",
+          "change": "edit"
+        },
+        {
+          "path": "src-tauri/Cargo.toml",
+          "change": "edit"
+        },
+        {
+          "path": "src/lib/MarkdownViewer.svelte",
+          "change": "edit"
+        },
+        {
+          "path": "src/lib/components/Editor.svelte",
+          "change": "edit"
+        },
+        {
+          "path": "scripts/previewScrollSync.test.ts",
+          "change": "edit"
+        }
+      ]
+    },
+    {
+      "ts": "2026-06-28T14:18:15+02:00",
+      "note": "Final release verification corrected after the GNU artifact issue: npm run check reports 0 errors/0 warnings; npx tsx --test scripts/*.test.ts passes 59/59; npm run tauri build -- --runner cargo-xwin --target x86_64-pc-windows-msvc --no-bundle --ci exits 0; /tmp/markpad-windows-build.log has no warning:/Warning:/WARN/error: matches; release/windows/Markpad_2.6.11_x64.exe was refreshed from the MSVC cargo-xwin target; SHA256SUMS validates with SHA256 954fdf6c199c1435158f820d59983c9e146b1799cd46181db79034e4cdf0cba2; objdump import scan finds no WebView2Loader.dll or VCRUNTIME import; git diff --check passes.",
+      "phase": "verify",
+      "files": [
+        {
+          "path": "release/windows/Markpad_2.6.11_x64.exe",
+          "change": "edit"
+        },
+        {
+          "path": "release/windows/SHA256SUMS.txt",
+          "change": "edit"
+        },
+        {
+          "path": "src-tauri/Cargo.toml",
+          "change": "edit"
+        },
+        {
+          "path": "src/lib/MarkdownViewer.svelte",
+          "change": "edit"
+        },
+        {
+          "path": "src/lib/components/Editor.svelte",
+          "change": "edit"
+        },
+        {
+          "path": "scripts/previewScrollSync.test.ts",
+          "change": "edit"
+        }
+      ]
+    }
+  ],
+  "decisions": [],
+  "verification": [
+    {
+      "command": "npm run check",
+      "outcome": "PASS: svelte-check found 0 errors and 0 warnings."
+    },
+    {
+      "command": "npx tsx --test scripts/*.test.ts",
+      "outcome": "PASS: 59/59 tests passed."
+    },
+    {
+      "command": "npm run tauri build -- --runner cargo-xwin --target x86_64-pc-windows-msvc --no-bundle --ci",
+      "outcome": "PASS: full Tauri Windows MSVC build completed and produced src-tauri/target/x86_64-pc-windows-msvc/release/Markpad.exe."
+    },
+    {
+      "command": "sha256sum -c SHA256SUMS.txt",
+      "outcome": "PASS: release/windows/Markpad_2.6.11_x64.exe validates with SHA256 954fdf6c199c1435158f820d59983c9e146b1799cd46181db79034e4cdf0cba2."
+    },
+    {
+      "command": "x86_64-w64-mingw32-objdump -p release/windows/Markpad_2.6.11_x64.exe | rg -i \"WebView2Loader|VCRUNTIME\"",
+      "outcome": "PASS: no WebView2Loader.dll or VCRUNTIME imports were found."
+    },
+    {
+      "command": "git diff --check",
+      "outcome": "PASS: no whitespace errors."
+    }
+  ],
+  "final_result": "Pixel-based editor-preview scroll synchronization accounts for frontmatter and differing layouts. The Windows release artifact was rebuilt with the full cargo-xwin/MSVC Tauri path and refreshed in release/windows."
+}

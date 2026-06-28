@@ -90,8 +90,14 @@ import { t } from './utils/i18n.js';
 		cyan: 'rgba(43, 185, 178, 0.4)',
 		green: 'rgba(77, 177, 88, 0.4)',
 	};
+
+	type ScrollSyncPosition = {
+		section: 'frontmatter' | 'body';
+		ratio: number;
+	};
+
 	let editorPane = $state<{ 
-		syncScrollToLine: (line: number, ratio?: number) => void; 
+		syncScrollToPosition: (position: ScrollSyncPosition) => void;
 		handleDroppedFile: (path: string, x: number, y: number) => Promise<void>;
 		updateDragCaret: (x: number, y: number) => void;
 		hideDragCaret: () => void;
@@ -1056,45 +1062,82 @@ import { t } from './utils/i18n.js';
 		}
 	});
 
-	function scrollToLine(line: number, ratio: number = 0) {
-		if (!markdownBody) return;
-
-		const children = Array.from(markdownBody.children) as HTMLElement[];
-		for (const el of children) {
-			const sourcepos = el.dataset.sourcepos;
-			if (sourcepos) {
-				const [start, end] = sourcepos.split('-');
-				const startLine = parseInt(start.split(':')[0]);
-				const endLine = parseInt(end.split(':')[0]);
-
-				if (!isNaN(startLine) && !isNaN(endLine)) {
-					if (line >= startLine && line <= endLine) {
-						const totalLines = endLine - startLine;
-						let lineRatio = 0;
-						if (totalLines > 0) {
-							lineRatio = (line - startLine) / totalLines;
-						}
-						lineRatio = Math.max(0, Math.min(1, lineRatio));
-
-						const elementTop = el.offsetTop + el.offsetHeight * lineRatio;
-
-						const viewportHeight = markdownBody.clientHeight;
-						const targetScroll = elementTop - viewportHeight * ratio;
-
-						if (Math.abs(markdownBody.scrollTop - targetScroll) > 5) {
-							isProgrammaticScroll = true;
-							markdownBody.scrollTop = Math.max(0, targetScroll);
-						}
-						return;
-					}
-				}
-			}
-		}
+	function clampScrollRatio(value: number) {
+		if (!Number.isFinite(value)) return 0;
+		return Math.max(0, Math.min(1, value));
 	}
 
-	function handleEditorScrollSync(line: number, ratio: number = 0) {
+	function getPreviewScrollMax(target: HTMLElement) {
+		return Math.max(0, target.scrollHeight - target.clientHeight);
+	}
+
+	function getScrollSyncPositionFromPixels(scrollTop: number, scrollMax: number, frontMatterEnd: number): ScrollSyncPosition {
+		const safeMax = Math.max(0, scrollMax);
+		const safeFrontMatterEnd = Math.max(0, Math.min(safeMax, frontMatterEnd));
+		const safeScrollTop = Math.max(0, Math.min(safeMax, scrollTop));
+
+		if (safeFrontMatterEnd > 0 && safeScrollTop < safeFrontMatterEnd) {
+			return {
+				section: 'frontmatter',
+				ratio: clampScrollRatio(safeScrollTop / safeFrontMatterEnd),
+			};
+		}
+
+		const bodyRange = Math.max(0, safeMax - safeFrontMatterEnd);
+		return {
+			section: 'body',
+			ratio: bodyRange > 0 ? clampScrollRatio((safeScrollTop - safeFrontMatterEnd) / bodyRange) : 0,
+		};
+	}
+
+	function getScrollTopForSyncPosition(position: ScrollSyncPosition, scrollMax: number, frontMatterEnd: number) {
+		const safeMax = Math.max(0, scrollMax);
+		const safeFrontMatterEnd = Math.max(0, Math.min(safeMax, frontMatterEnd));
+		const ratio = clampScrollRatio(position.ratio);
+
+		if (position.section === 'frontmatter') {
+			return safeFrontMatterEnd * ratio;
+		}
+
+		const bodyRange = Math.max(0, safeMax - safeFrontMatterEnd);
+		return safeFrontMatterEnd + bodyRange * ratio;
+	}
+
+	function getPreviewFrontMatterScrollEnd(target: HTMLElement) {
+		if (!frontMatterInfo.exists) return 0;
+
+		const panel = target.querySelector<HTMLElement>('.frontmatter' + '-panel');
+		if (!panel) return 0;
+
+		return Math.max(0, Math.min(getPreviewScrollMax(target), panel.offsetTop + panel.offsetHeight));
+	}
+
+	function getPreviewScrollSyncPosition(target: HTMLElement) {
+		return getScrollSyncPositionFromPixels(
+			target.scrollTop,
+			getPreviewScrollMax(target),
+			getPreviewFrontMatterScrollEnd(target),
+		);
+	}
+
+	function scrollPreviewToSyncPosition(position: ScrollSyncPosition) {
+		if (!markdownBody) return;
+
+		const targetScroll = getScrollTopForSyncPosition(
+			position,
+			getPreviewScrollMax(markdownBody),
+			getPreviewFrontMatterScrollEnd(markdownBody),
+		);
+
+		if (Math.abs(markdownBody.scrollTop - targetScroll) <= 5) return;
+
+		isProgrammaticScroll = true;
+		markdownBody.scrollTop = targetScroll;
+	}
+
+	function handleEditorScrollSync(position: ScrollSyncPosition) {
 		if (tabManager.activeTab?.isScrollSynced) {
-			scrollToLine(line, ratio);
+			scrollPreviewToSyncPosition(position);
 		}
 	}
 
@@ -1147,8 +1190,8 @@ import { t } from './utils/i18n.js';
 	function syncEditorToPreviewScroll(target: HTMLElement) {
 		if (!tabManager.activeTab?.isScrollSynced || !editorPane) return;
 
-		const anchor = getPreviewScrollAnchor(target);
-		if (anchor) editorPane.syncScrollToLine(anchor.line, anchor.ratio);
+		const position = getPreviewScrollSyncPosition(target);
+		editorPane.syncScrollToPosition(position);
 	}
 
 	let isScrolling = $state(false);
