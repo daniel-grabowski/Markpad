@@ -160,7 +160,7 @@ class TabManager {
 		this.activeTabId = id;
 	}
 
-	closeTab(id: string) {
+	closeTab(id: string, recordRecentlyClosed = true) {
 		const index = this.tabs.findIndex((t) => t.id === id);
 		if (index === -1) return;
 
@@ -170,7 +170,7 @@ class TabManager {
 		}
 
 		const tab = this.tabs[index];
-		if (tab.path && tab.path !== 'HOME') {
+		if (recordRecentlyClosed && tab.path && tab.path !== 'HOME') {
 			this.recentlyClosed.push(tab.path);
 		}
 		this.tabs.splice(index, 1);

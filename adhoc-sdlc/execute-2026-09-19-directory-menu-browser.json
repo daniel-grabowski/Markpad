@@ -1,0 +1,161 @@
+{
+  "type": "execute",
+  "name": "directory-menu-browser",
+  "title": "Przeglądanie katalogów i plików w menu zakładki",
+  "project": "",
+  "keywords": [],
+  "original_prompt": "$adhoc-sdlc:adhoc-sdlc plan rekomendowane opcje - temper - i execute\\nfajne, dodaj dynamikę do tego menu pokazując katalogi i pozwalając na przeglądanie katalogów i plików w menu",
+  "created": "2026-09-19T18:58:28+02:00",
+  "updated": "2026-09-19T19:13:46+02:00",
+  "status": "done",
+  "plan": "/home/dgrabowski/projects/Markpad/adhoc-sdlc/plan-2026-09-19-directory-menu-browser.md",
+  "entries": [
+    {
+      "ts": "2026-09-19T18:58:29+02:00",
+      "note": "Checklista wykonania: 1) testy i model wpisów katalogu, 2) bezpieczny backend jednego poziomu, 3) kontroler kaskady i pozycjonowanie, 4) integracja menu zakładki i i18n, 5) pełna weryfikacja, Execution CoVe i aktualny Windows Release EXE.",
+      "phase": "preparation",
+      "files": [
+        {
+          "path": "adhoc-sdlc/plan-2026-09-19-directory-menu-browser.md",
+          "change": "edit"
+        }
+      ]
+    },
+    {
+      "ts": "2026-09-19T19:07:27+02:00",
+      "note": "Dodano kontrakty testowe dla wpisów katalog/pliki, sortowania, cache/retry loadera oraz pozycjonowania paneli; potwierdzono początkowy stan RED, następnie testy przeszły po implementacji.",
+      "phase": "tests-model",
+      "files": [
+        {
+          "path": "scripts/directoryFileMenu.test.ts",
+          "change": "edit"
+        },
+        {
+          "path": "scripts/contextMenuCascade.test.ts",
+          "change": "edit"
+        },
+        {
+          "path": "scripts/directoryFileMenuWiring.test.ts",
+          "change": "edit"
+        },
+        {
+          "path": "src/lib/utils/directoryFileMenu.ts",
+          "change": "edit"
+        },
+        {
+          "path": "src/lib/utils/contextMenuCascade.ts",
+          "change": "edit"
+        }
+      ]
+    },
+    {
+      "ts": "2026-09-19T19:07:27+02:00",
+      "note": "Backend listuje jeden poziom katalogu jako pliki lub katalogi, kanonizuje korzeń dokumentu, blokuje wyjście poza korzeń oraz pomija symlinki i wpisy nie-UTF-8.",
+      "phase": "backend",
+      "files": [
+        {
+          "path": "src-tauri/src/lib.rs",
+          "change": "edit"
+        }
+      ]
+    },
+    {
+      "ts": "2026-09-19T19:07:27+02:00",
+      "note": "Wspólny ContextMenu przebudowano na kaskadę niezależnych paneli fixed z leniwym loadChildren, cache współbieżnych żądań, retry, ochroną sesji/gałęzi, pełną nawigacją klawiaturą i pozycjonowaniem przy krawędziach.",
+      "phase": "cascade-menu",
+      "files": [
+        {
+          "path": "src/lib/components/ContextMenu.svelte",
+          "change": "edit"
+        },
+        {
+          "path": "src/lib/utils/contextMenuCascade.ts",
+          "change": "edit"
+        }
+      ]
+    },
+    {
+      "ts": "2026-09-19T19:07:27+02:00",
+      "note": "Menu zakładki tworzy leniwe elementy katalogów i plików, pokazuje ikony, katalogi przed plikami i zachowuje klik/Shift dla plików.",
+      "phase": "tab-integration",
+      "files": [
+        {
+          "path": "src/lib/components/Tab.svelte",
+          "change": "edit"
+        },
+        {
+          "path": "src/lib/utils/directoryFileMenu.ts",
+          "change": "edit"
+        }
+      ]
+    },
+    {
+      "ts": "2026-09-19T19:13:45+02:00",
+      "note": "Wykonano pełny Tauri Windows x64 release build z bieżącego kodu, skopiowano portable EXE do release/windows i odświeżono SHA256SUMS.txt.",
+      "phase": "release",
+      "files": [
+        {
+          "path": "release/windows/Markpad_2.6.11_x64.exe",
+          "change": "edit"
+        },
+        {
+          "path": "release/windows/SHA256SUMS.txt",
+          "change": "edit"
+        }
+      ]
+    }
+  ],
+  "decisions": [
+    {
+      "ts": "2026-09-19T18:58:28+02:00",
+      "text": "Zastosowano wszystkie rekomendowane tryby: brainstorming, deep-code-verification, test-execution, Plan CoVe, Strategy Temper i Execution CoVe."
+    },
+    {
+      "ts": "2026-09-19T18:58:28+02:00",
+      "text": "Runtime nie udostępnia natywnego trackera zadań; zgodnie z wcześniejszym poleceniem użytkownika kontynuujemy bez tej bramki, prowadząc checklistę i postęp w dzienniku SDLC."
+    }
+  ],
+  "verification": [
+    {
+      "ts": "2026-09-19T19:13:45+02:00",
+      "command": "npm run check",
+      "outcome": "PASS: svelte-check znalazł 0 błędów i 0 ostrzeżeń."
+    },
+    {
+      "ts": "2026-09-19T19:13:45+02:00",
+      "command": "npx -y tsx --test scripts/*.test.ts",
+      "outcome": "PASS: wszystkie 72 testy TypeScript przeszły."
+    },
+    {
+      "ts": "2026-09-19T19:13:45+02:00",
+      "command": "cargo check --manifest-path src-tauri/Cargo.toml --target x86_64-pc-windows-gnu",
+      "outcome": "PASS: backend Rust przeszedł type-check dla Windows GNU."
+    },
+    {
+      "ts": "2026-09-19T19:13:46+02:00",
+      "command": "cargo xwin test --manifest-path src-tauri/Cargo.toml --target x86_64-pc-windows-msvc --no-run",
+      "outcome": "PASS: testy Rust wraz z nowymi testami katalogów zostały skompilowane i zlinkowane dla Windows MSVC. Nie uruchomiono ich, ponieważ host nie ma środowiska uruchomieniowego Windows/Wine; GNU test runner pozostaje zablokowany przez -lShell32."
+    },
+    {
+      "ts": "2026-09-19T19:13:46+02:00",
+      "command": "npm run build",
+      "outcome": "PASS: produkcyjny frontend build zakończony powodzeniem."
+    },
+    {
+      "ts": "2026-09-19T19:13:46+02:00",
+      "command": "npm run tauri build -- --runner cargo-xwin --target x86_64-pc-windows-msvc --no-bundle --ci",
+      "outcome": "PASS: pełny Tauri Windows x64 release build zakończony powodzeniem."
+    },
+    {
+      "ts": "2026-09-19T19:13:46+02:00",
+      "command": "(cd release/windows && sha256sum -c SHA256SUMS.txt); file release/windows/Markpad_2.6.11_x64.exe; strings release/windows/Markpad_2.6.11_x64.exe | rg list_directory_entries",
+      "outcome": "PASS: aktualny artefakt ma poprawną sumę SHA-256, format PE32+ GUI x86-64 i zawiera list_directory_entries."
+    },
+    {
+      "ts": "2026-09-19T19:13:46+02:00",
+      "command": "git diff --check; git status --short; rg -n 'list_directory_entries|loadChildren|ArrowRight|ArrowLeft|getSubmenuPanelPosition' src-tauri/src/lib.rs src/lib",
+      "outcome": "PASS: final self-check i Execution CoVe zgodne z planem, diffem, dziennikiem i wynikami poleceń. Potwierdzono leniwe panele, ograniczenie korzenia, sortowanie/filtrowanie, klawiaturę, bezpieczne otwieranie plików oraz aktualny EXE. Ograniczenie: brak ręcznego smoke testu w WebView Windows i brak uruchomienia binariów testowych Rust."
+    }
+  ],
+  "final_result": "Gotowe: dynamiczne menu przegląda katalogi i obsługiwane pliki w leniwej kaskadzie; aktualny Windows Release EXE został zbudowany i zweryfikowany. Bez commita."
+}

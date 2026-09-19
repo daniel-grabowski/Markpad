@@ -6,6 +6,11 @@
 	import { t } from '../utils/i18n.js';
 	import { settings } from '../stores/settings.svelte.js';
 	import { getTabExportActions, getTabFileActions, hasRealFilePath } from '../utils/tabFileActions.js';
+	import {
+		getDirectoryMenuEntries,
+		getDirectoryFileOpenMode,
+		type DirectoryMenuEntry,
+	} from '../utils/directoryFileMenu.js';
 
 	let { tab, isActive, isLast, fitToWidth = false, onclick, onclose } = $props<{
 		tab: Tab;
@@ -27,7 +32,6 @@
 		y: 0,
 		items: [],
 	});
-
 	function handleClose(e: MouseEvent) {
 		e.stopPropagation();
 		onclose(e);
@@ -51,11 +55,49 @@
 		invoke('open_file_folder', { path: tab.path }).catch(console.error);
 	}
 
+	function directoryLoaderLabels(currentLang: typeof settings.language) {
+		return {
+			loadingLabel: t('menu.loadingDirectoryFiles', currentLang),
+			emptyLabel: t('menu.noDirectoryFiles', currentLang),
+			errorLabel: t('menu.directoryFilesError', currentLang),
+			retryLabel: t('updater.retry', currentLang),
+		};
+	}
+
+	async function loadDirectoryEntries(
+		sourceTabId: string,
+		sourcePath: string,
+		directoryPath: string | null,
+		currentLang: typeof settings.language,
+	): Promise<ContextMenuItem[]> {
+		const entries = await invoke<DirectoryMenuEntry[]>('list_directory_entries', {
+			documentPath: sourcePath,
+			directoryPath,
+		});
+		return getDirectoryMenuEntries(entries, sourcePath, settings.osType).map((entry) => entry.isDirectory
+			? {
+				label: entry.name,
+				icon: 'folder',
+				...directoryLoaderLabels(currentLang),
+				loadChildren: () => loadDirectoryEntries(sourceTabId, sourcePath, entry.path, currentLang),
+			}
+			: {
+				label: entry.name,
+				icon: 'file',
+				onClick: (event) => emit('menu-tab-open-directory-file', {
+					sourceTabId,
+					path: entry.path,
+					mode: getDirectoryFileOpenMode(event),
+				}),
+			});
+	}
+
 	function handleContextMenu(e: MouseEvent) {
 		e.preventDefault();
 		e.stopPropagation();
 
 		const currentLang = settings.language;
+		const canListDirectory = hasRealFilePath(tab.path);
 		const fileActionItems: ContextMenuItem[] = getTabFileActions(tab.path).map((action) => ({
 			label: t(action.labelKey, currentLang),
 			disabled: action.disabled,
@@ -77,6 +119,16 @@
 				{ label: t('menu.rename', currentLang), onClick: () => emit('menu-tab-rename', tab.id) },
 				{ separator: true },
 				...fileActionItems,
+				{ separator: true },
+				{
+					id: 'directory-files',
+					label: t('menu.filesInDirectory', currentLang),
+					disabled: !canListDirectory,
+					...directoryLoaderLabels(currentLang),
+					loadChildren: canListDirectory
+						? () => loadDirectoryEntries(tab.id, tab.path, null, currentLang)
+						: undefined,
+				},
 				{ separator: true },
 				...exportActionItems,
 				{ separator: true },

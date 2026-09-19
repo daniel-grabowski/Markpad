@@ -6397,6 +6397,40 @@ for (const [language, sections] of Object.entries(interactiveLabelTranslations) 
     }
 }
 
+const directoryMenuTranslations: Record<LanguageCode, Record<string, string>> = {
+	en: { filesInDirectory: 'Files in directory', loadingDirectoryFiles: 'Loading files…', noDirectoryFiles: 'No other supported files', directoryFilesError: 'Could not read directory' },
+	ja: { filesInDirectory: 'フォルダー内のファイル', loadingDirectoryFiles: 'ファイルを読み込み中…', noDirectoryFiles: '他に対応ファイルはありません', directoryFilesError: 'フォルダーを読み込めませんでした' },
+	'zh-CN': { filesInDirectory: '文件夹中的文件', loadingDirectoryFiles: '正在加载文件…', noDirectoryFiles: '没有其他受支持的文件', directoryFilesError: '无法读取文件夹' },
+	'zh-TW': { filesInDirectory: '資料夾中的檔案', loadingDirectoryFiles: '正在載入檔案…', noDirectoryFiles: '沒有其他支援的檔案', directoryFilesError: '無法讀取資料夾' },
+	ko: { filesInDirectory: '폴더의 파일', loadingDirectoryFiles: '파일 불러오는 중…', noDirectoryFiles: '다른 지원 파일이 없습니다', directoryFilesError: '폴더를 읽을 수 없습니다' },
+	ru: { filesInDirectory: 'Файлы в папке', loadingDirectoryFiles: 'Загрузка файлов…', noDirectoryFiles: 'Других поддерживаемых файлов нет', directoryFilesError: 'Не удалось прочитать папку' },
+	es: { filesInDirectory: 'Archivos de la carpeta', loadingDirectoryFiles: 'Cargando archivos…', noDirectoryFiles: 'No hay otros archivos compatibles', directoryFilesError: 'No se pudo leer la carpeta' },
+	fr: { filesInDirectory: 'Fichiers du dossier', loadingDirectoryFiles: 'Chargement des fichiers…', noDirectoryFiles: 'Aucun autre fichier compatible', directoryFilesError: 'Impossible de lire le dossier' },
+	de: { filesInDirectory: 'Dateien im Ordner', loadingDirectoryFiles: 'Dateien werden geladen…', noDirectoryFiles: 'Keine weiteren unterstützten Dateien', directoryFilesError: 'Ordner konnte nicht gelesen werden' },
+	'pt-BR': { filesInDirectory: 'Arquivos na pasta', loadingDirectoryFiles: 'Carregando arquivos…', noDirectoryFiles: 'Nenhum outro arquivo compatível', directoryFilesError: 'Não foi possível ler a pasta' },
+	it: { filesInDirectory: 'File nella cartella', loadingDirectoryFiles: 'Caricamento file…', noDirectoryFiles: 'Nessun altro file supportato', directoryFilesError: 'Impossibile leggere la cartella' },
+	pl: { filesInDirectory: 'Pliki w katalogu', loadingDirectoryFiles: 'Wczytywanie plików…', noDirectoryFiles: 'Brak innych obsługiwanych plików', directoryFilesError: 'Nie udało się odczytać katalogu' },
+	nl: { filesInDirectory: 'Bestanden in map', loadingDirectoryFiles: 'Bestanden laden…', noDirectoryFiles: 'Geen andere ondersteunde bestanden', directoryFilesError: 'Map kon niet worden gelezen' },
+	sv: { filesInDirectory: 'Filer i mappen', loadingDirectoryFiles: 'Läser in filer…', noDirectoryFiles: 'Inga andra filer som stöds', directoryFilesError: 'Det gick inte att läsa mappen' },
+	vi: { filesInDirectory: 'Tệp trong thư mục', loadingDirectoryFiles: 'Đang tải tệp…', noDirectoryFiles: 'Không có tệp được hỗ trợ nào khác', directoryFilesError: 'Không thể đọc thư mục' },
+	pt: { filesInDirectory: 'Ficheiros na pasta', loadingDirectoryFiles: 'A carregar ficheiros…', noDirectoryFiles: 'Não existem outros ficheiros suportados', directoryFilesError: 'Não foi possível ler a pasta' },
+	ro: { filesInDirectory: 'Fișiere din dosar', loadingDirectoryFiles: 'Se încarcă fișierele…', noDirectoryFiles: 'Nu există alte fișiere acceptate', directoryFilesError: 'Dosarul nu a putut fi citit' },
+	hu: { filesInDirectory: 'Fájlok a mappában', loadingDirectoryFiles: 'Fájlok betöltése…', noDirectoryFiles: 'Nincs más támogatott fájl', directoryFilesError: 'A mappa nem olvasható' },
+	cs: { filesInDirectory: 'Soubory ve složce', loadingDirectoryFiles: 'Načítání souborů…', noDirectoryFiles: 'Žádné další podporované soubory', directoryFilesError: 'Složku se nepodařilo načíst' },
+	sk: { filesInDirectory: 'Súbory v priečinku', loadingDirectoryFiles: 'Načítavajú sa súbory…', noDirectoryFiles: 'Žiadne ďalšie podporované súbory', directoryFilesError: 'Priečinok sa nepodarilo načítať' },
+	el: { filesInDirectory: 'Αρχεία στον φάκελο', loadingDirectoryFiles: 'Φόρτωση αρχείων…', noDirectoryFiles: 'Δεν υπάρχουν άλλα υποστηριζόμενα αρχεία', directoryFilesError: 'Δεν ήταν δυνατή η ανάγνωση του φακέλου' },
+	fi: { filesInDirectory: 'Kansion tiedostot', loadingDirectoryFiles: 'Ladataan tiedostoja…', noDirectoryFiles: 'Ei muita tuettuja tiedostoja', directoryFilesError: 'Kansiota ei voitu lukea' },
+	da: { filesInDirectory: 'Filer i mappen', loadingDirectoryFiles: 'Indlæser filer…', noDirectoryFiles: 'Ingen andre understøttede filer', directoryFilesError: 'Mappen kunne ikke læses' },
+	no: { filesInDirectory: 'Filer i mappen', loadingDirectoryFiles: 'Laster filer…', noDirectoryFiles: 'Ingen andre støttede filer', directoryFilesError: 'Kunne ikke lese mappen' },
+	id: { filesInDirectory: 'Berkas dalam folder', loadingDirectoryFiles: 'Memuat berkas…', noDirectoryFiles: 'Tidak ada berkas lain yang didukung', directoryFilesError: 'Folder tidak dapat dibaca' },
+	tr: { filesInDirectory: 'Klasördeki dosyalar', loadingDirectoryFiles: 'Dosyalar yükleniyor…', noDirectoryFiles: 'Başka desteklenen dosya yok', directoryFilesError: 'Klasör okunamadı' },
+};
+
+for (const [language, values] of Object.entries(directoryMenuTranslations) as [LanguageCode, Record<string, string>][]) {
+	const menu = translations[language].menu;
+	if (menu && typeof menu === 'object') Object.assign(menu, values);
+}
+
 export function t(key: string, lang: LanguageCode = 'en'): string {
     const keys = key.split('.');
     

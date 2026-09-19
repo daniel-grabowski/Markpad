@@ -1,0 +1,156 @@
+{
+  "type": "execute",
+  "name": "tab-directory-files-submenu",
+  "title": "Dynamiczne podmenu plików katalogu w menu zakładki",
+  "project": "",
+  "keywords": [],
+  "original_prompt": "dodaj do popup menu menu zalezne ktore w katalogu twartego dokumentu bedzie budowal dynamicznie na odstawie zawartosci plikow ktore markpad moze otworzyc. klikniecie na ement otwiera ten plik w nowej karcie. z wciśniętym shift (jesli dostepny skrot) otwiera w biezacej karcie",
+  "created": "2026-09-19T18:19:16+02:00",
+  "updated": "2026-09-19T18:50:01+02:00",
+  "status": "done",
+  "plan": "/home/dgrabowski/projects/Markpad/adhoc-sdlc/plan-2026-09-19-tab-directory-files-submenu.md",
+  "entries": [
+    {
+      "ts": "2026-09-19T18:19:16+02:00",
+      "note": "Przygotowanie wykonania zatrzymane przed zmianą kodu: runtime nie udostępnia wymaganego natywnego trackera zadań, a bieżący checkout jest na gałęzi master; implementacja wymaga listy zadań oraz izolowanego worktree.",
+      "phase": "preparation"
+    },
+    {
+      "ts": "2026-09-19T18:20:57+02:00",
+      "note": "Dodano test-first wspólną logikę filtrowania, wykluczania źródła, naturalnego sortowania plików oraz wyboru trybu na podstawie Shift; test RED potwierdził brak modułu, a GREEN przeszedł 3/3.",
+      "phase": "tdd-domain-logic",
+      "files": [
+        {
+          "path": "scripts/directoryFileMenu.test.ts",
+          "change": "edit"
+        },
+        {
+          "path": "src/lib/utils/directoryFileMenu.ts",
+          "change": "edit"
+        }
+      ]
+    },
+    {
+      "ts": "2026-09-19T18:34:32+02:00",
+      "note": "Dodano komendę Tauri zwracającą bezpośrednie pliki z katalogu dokumentu oraz testy jednostkowe zakresu listowania.",
+      "phase": "backend",
+      "files": [
+        {
+          "path": "src-tauri/src/lib.rs",
+          "change": "edit"
+        }
+      ]
+    },
+    {
+      "ts": "2026-09-19T18:34:32+02:00",
+      "note": "Rozszerzono wspólny ContextMenu o podmenu, obsługę klawiatury i modyfikatorów; menu zakładki ładuje dynamiczną listę, filtruje obsługiwane typy, pomija plik źródłowy i pokazuje stany loading/empty/error.",
+      "phase": "menu-ui",
+      "files": [
+        {
+          "path": "src/lib/components/ContextMenu.svelte",
+          "change": "edit"
+        },
+        {
+          "path": "src/lib/components/Tab.svelte",
+          "change": "edit"
+        },
+        {
+          "path": "src/lib/utils/i18n.ts",
+          "change": "edit"
+        },
+        {
+          "path": "scripts/directoryFileMenuWiring.test.ts",
+          "change": "edit"
+        }
+      ]
+    },
+    {
+      "ts": "2026-09-19T18:34:32+02:00",
+      "note": "Kliknięcie otwiera wybrany plik w nowej zakładce; Shift+klik zastępuje wskazaną zakładkę po przejściu ochrony niezapisanych zmian. Błędnie utworzona zakładka jest wycofywana bez wpisu do historii zamkniętych.",
+      "phase": "file-open",
+      "files": [
+        {
+          "path": "src/lib/MarkdownViewer.svelte",
+          "change": "edit"
+        },
+        {
+          "path": "src/lib/stores/tabs.svelte.ts",
+          "change": "edit"
+        }
+      ]
+    },
+    {
+      "ts": "2026-09-19T18:34:33+02:00",
+      "note": "Porównano plan z implementacją i dowodami: podmenu działa dla nieaktywnej wskazanej zakładki, lista jest bez rekurencji i bez bieżącego pliku, duplikaty są dozwolone, Shift zastępuje źródło z ochroną dirty state, a klawiatura i wszystkie języki mają pokrycie.",
+      "phase": "execution-cove"
+    },
+    {
+      "ts": "2026-09-19T18:50:01+02:00",
+      "note": "Na wyraźne żądanie użytkownika wykonano pełny bieżący build Tauri Windows x64 przez cargo-xwin, skopiowano przenośny EXE do katalogu release/windows i odświeżono SHA256SUMS.txt.",
+      "phase": "release",
+      "files": [
+        {
+          "path": "release/windows/Markpad_2.6.11_x64.exe",
+          "change": "edit"
+        },
+        {
+          "path": "release/windows/SHA256SUMS.txt",
+          "change": "edit"
+        }
+      ]
+    }
+  ],
+  "decisions": [
+    {
+      "ts": "2026-09-19T18:19:16+02:00",
+      "text": "Nie rozpoczynać zmian produkcyjnych bez natywnej listy zadań wymaganej przez adhoc-sdlc; po udostępnieniu trackera wykonać pracę w izolowanym worktree, nie bezpośrednio na master."
+    },
+    {
+      "ts": "2026-09-19T18:20:19+02:00",
+      "text": "Użytkownik polecił pominąć zgłoszone bramki: wykonanie będzie prowadzone bez natywnego trackera zadań i bez worktree, bezpośrednio na bieżącym master. Postęp pozostaje zapisywany inkrementalnie w dzienniku, a kod nie będzie commitowany."
+    }
+  ],
+  "verification": [
+    {
+      "ts": "2026-09-19T18:34:32+02:00",
+      "command": "npx -y tsx --test scripts/*.test.ts",
+      "outcome": "67 testów TypeScript zakończonych powodzeniem."
+    },
+    {
+      "ts": "2026-09-19T18:34:32+02:00",
+      "command": "npm run check",
+      "outcome": "Svelte diagnostics: 0 błędów, 0 ostrzeżeń."
+    },
+    {
+      "ts": "2026-09-19T18:34:32+02:00",
+      "command": "npm run build",
+      "outcome": "Produkcyjny build frontendu zakończony powodzeniem."
+    },
+    {
+      "ts": "2026-09-19T18:34:32+02:00",
+      "command": "cargo check --target x86_64-pc-windows-gnu",
+      "outcome": "Backend Rust poprawnie przechodzi type-check dla docelowego Windows GNU."
+    },
+    {
+      "ts": "2026-09-19T18:34:32+02:00",
+      "command": "cargo test sibling_files",
+      "outcome": "Pełne cargo test nie mogło zostać uruchomione na hoście: Linux nie ma bibliotek GTK/Pango/ATK/libsoup/javascriptcore, a Windows GNU nie może zlinkować -lShell32. Rust został niezależnie zweryfikowany przez cargo check dla targetu Windows."
+    },
+    {
+      "ts": "2026-09-19T18:34:33+02:00",
+      "command": "git diff --check",
+      "outcome": "Diff nie zawiera błędów whitespace."
+    },
+    {
+      "ts": "2026-09-19T18:50:01+02:00",
+      "command": "npm run tauri build -- --runner cargo-xwin --target x86_64-pc-windows-msvc --no-bundle --ci",
+      "outcome": "PASS: pełny Tauri Windows x64 release build zakończony powodzeniem."
+    },
+    {
+      "ts": "2026-09-19T18:50:01+02:00",
+      "command": "sha256sum -c SHA256SUMS.txt; file Markpad_2.6.11_x64.exe; strings Markpad_2.6.11_x64.exe | rg list_sibling_files",
+      "outcome": "PASS: suma kontrolna zgodna, artefakt PE32+ GUI x86-64 dla Windows, a binarium zawiera nową komendę list_sibling_files."
+    }
+  ],
+  "final_result": "Plan wykonany; aktualny Windows Release EXE utworzony i zweryfikowany, bez commita."
+}

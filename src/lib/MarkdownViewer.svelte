@@ -737,7 +737,13 @@ import { t } from './utils/i18n.js';
 		resetScrollHistory?: boolean;
 	};
 
-	async function loadMarkdown(filePath: string, options: LoadMarkdownOptions = {}) {
+	type DirectoryFileOpenRequest = {
+		sourceTabId: string;
+		path: string;
+		mode: 'new-tab' | 'replace-tab';
+	};
+
+	async function loadMarkdown(filePath: string, options: LoadMarkdownOptions = {}): Promise<boolean> {
 		showHome = false;
 		let existing = null;
 		let pendingNavigateTabId: string | null = null;
@@ -759,7 +765,7 @@ import { t } from './utils/i18n.js';
 				}
 			}
 			const activeId = tabManager.activeTabId;
-			if (!activeId) return;
+			if (!activeId) return false;
 
 			const isMarkdown = hasMarkdownLinkExtension(filePath);
 			const tab = tabManager.tabs.find((t) => t.id === activeId);
@@ -840,6 +846,7 @@ import { t } from './utils/i18n.js';
 
 			await tick();
 			if (filePath) saveRecentFile(filePath);
+			return true;
 		} catch (error) {
 			console.error('Error loading file:', error);
 			const errStr = String(error);
@@ -849,6 +856,39 @@ import { t } from './utils/i18n.js';
 					tabManager.closeTab(tabManager.activeTab.id);
 				}
 			}
+			return false;
+		}
+	}
+
+	async function openDirectoryFile(request: DirectoryFileOpenRequest) {
+		const sourceTab = tabManager.tabs.find((tab) => tab.id === request.sourceTabId);
+		if (!sourceTab) return;
+
+		try {
+			await invoke<string>('read_file_content', { path: request.path });
+		} catch (error) {
+			console.error('Failed to prepare directory file', error);
+			addToast(`${t('menu.directoryFilesError', settings.language)}: ${request.path.split(/[/\\]/).pop() || request.path}`, 'error');
+			return;
+		}
+
+		if (request.mode === 'replace-tab') {
+			if (!(await canCloseTab(request.sourceTabId))) return;
+			if (!tabManager.tabs.some((tab) => tab.id === request.sourceTabId)) return;
+			tabManager.setActive(request.sourceTabId);
+			showHome = false;
+			const opened = await loadMarkdown(request.path, { navigate: true, resetScrollHistory: true });
+			if (!opened) addToast(`${t('menu.directoryFilesError', settings.language)}: ${request.path.split(/[/\\]/).pop() || request.path}`, 'error');
+			return;
+		}
+
+		tabManager.addTab(request.path);
+		const newTabId = tabManager.activeTabId;
+		showHome = false;
+		const opened = await loadMarkdown(request.path, { skipTabManagement: true, resetScrollHistory: true });
+		if (!opened && newTabId) {
+			tabManager.closeTab(newTabId, false);
+			addToast(`${t('menu.directoryFilesError', settings.language)}: ${request.path.split(/[/\\]/).pop() || request.path}`, 'error');
 		}
 	}
 
@@ -2751,6 +2791,11 @@ import { t } from './utils/i18n.js';
 				await listen('menu-tab-undo', () => {
 					console.log('Received menu-tab-undo event');
 					handleUndoCloseTab();
+				}),
+			);
+			unlisteners.push(
+				await listen('menu-tab-open-directory-file', (event) => {
+					void openDirectoryFile(event.payload as DirectoryFileOpenRequest);
 				}),
 			);
 			unlisteners.push(

@@ -1,6 +1,7 @@
 use comrak::{markdown_to_html, ComrakExtensionOptions, ComrakOptions};
 use notify::{Config, RecommendedWatcher, RecursiveMode, Watcher};
 use regex::{Captures, Regex};
+use serde::Serialize;
 use std::borrow::Cow;
 use std::fs;
 use std::io::Write;
@@ -131,6 +132,73 @@ mod tests {
             file_bytes_to_data_url("image/png", b"Markpad"),
             "data:image/png;base64,TWFya3BhZA==",
         );
+    }
+
+    #[test]
+    fn directory_entries_include_direct_files_and_directories() {
+        let unique = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        let dir = std::env::temp_dir().join(format!(
+            "markpad-siblings-{}-{unique}",
+            std::process::id()
+        ));
+        fs::create_dir_all(dir.join("nested")).unwrap();
+        fs::write(dir.join("current.md"), "current").unwrap();
+        fs::write(dir.join("guide.md"), "guide").unwrap();
+        fs::write(dir.join("image.png"), "image").unwrap();
+        fs::write(dir.join("nested").join("hidden.md"), "hidden").unwrap();
+
+        let mut entries = list_directory_entries(
+            dir.join("current.md").to_string_lossy().into_owned(),
+            None,
+        )
+        .unwrap();
+        entries.sort_by(|left, right| left.name.cmp(&right.name));
+
+        assert_eq!(
+            entries
+                .iter()
+                .map(|entry| entry.name.as_str())
+                .collect::<Vec<_>>(),
+            vec!["current.md", "guide.md", "image.png", "nested"],
+        );
+        assert!(entries
+            .iter()
+            .all(|entry| Path::new(&entry.path).is_absolute()));
+        assert!(entries.iter().find(|entry| entry.name == "nested").unwrap().is_directory);
+        assert!(!entries.iter().find(|entry| entry.name == "guide.md").unwrap().is_directory);
+
+        fs::remove_dir_all(dir).unwrap();
+    }
+
+    #[test]
+    fn directory_entries_reject_a_document_without_a_parent_directory() {
+        assert!(list_directory_entries("current.md".to_string(), None).is_err());
+    }
+
+    #[test]
+    fn directory_entries_reject_a_directory_outside_the_document_root() {
+        let unique = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        let root = std::env::temp_dir().join(format!("markpad-root-{}-{unique}", std::process::id()));
+        let outside = std::env::temp_dir().join(format!("markpad-outside-{}-{unique}", std::process::id()));
+        fs::create_dir_all(&root).unwrap();
+        fs::create_dir_all(&outside).unwrap();
+        let document = root.join("current.md");
+        fs::write(&document, "current").unwrap();
+
+        assert!(list_directory_entries(
+            document.to_string_lossy().into_owned(),
+            Some(outside.to_string_lossy().into_owned()),
+        )
+        .is_err());
+
+        fs::remove_dir_all(root).unwrap();
+        fs::remove_dir_all(outside).unwrap();
     }
 }
 
@@ -900,6 +968,63 @@ fn list_directory_contents(path: String) -> Result<Vec<String>, String> {
     Ok(entries)
 }
 
+#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct DirectoryMenuEntry {
+    name: String,
+    path: String,
+    is_directory: bool,
+}
+
+#[tauri::command]
+fn list_directory_entries(
+    document_path: String,
+    directory_path: Option<String>,
+) -> Result<Vec<DirectoryMenuEntry>, String> {
+    let root = Path::new(&document_path)
+        .parent()
+        .filter(|path| !path.as_os_str().is_empty())
+        .ok_or_else(|| "Document path has no parent directory".to_string())?;
+    let root = root.canonicalize().map_err(|e| e.to_string())?;
+    if !root.is_dir() {
+        return Err("Document parent is not a directory".to_string());
+    }
+
+    let requested = directory_path
+        .map(PathBuf::from)
+        .unwrap_or_else(|| root.clone())
+        .canonicalize()
+        .map_err(|e| e.to_string())?;
+    if !requested.starts_with(&root) {
+        return Err("Requested directory is outside the document directory".to_string());
+    }
+    if !requested.is_dir() {
+        return Err("Requested path is not a directory".to_string());
+    }
+
+    let mut entries = Vec::new();
+    for entry in fs::read_dir(requested).map_err(|e| e.to_string())? {
+        let entry = entry.map_err(|e| e.to_string())?;
+        let file_type = entry.file_type().map_err(|e| e.to_string())?;
+        if file_type.is_symlink() || (!file_type.is_file() && !file_type.is_dir()) {
+            continue;
+        }
+        let Some(name) = entry.file_name().to_str().map(str::to_owned) else {
+            continue;
+        };
+        let Some(path) = entry.path().to_str().map(str::to_owned) else {
+            continue;
+        };
+        entries.push(DirectoryMenuEntry {
+            name,
+            path,
+            is_directory: file_type.is_dir(),
+        });
+    }
+
+    Ok(entries)
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     #[cfg(target_os = "linux")]
@@ -1197,7 +1322,8 @@ pub fn run() {
             delete_file,
             copy_file,
             cleanup_empty_img_dir,
-            list_directory_contents
+            list_directory_contents,
+            list_directory_entries,
         ])
         .on_menu_event(|app, event| {
             let id = event.id().as_ref();
